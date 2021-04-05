@@ -37,6 +37,19 @@ cd ../../..
 ```
 
 
+## run demo (test detection on images)
+
+put your images into folder  `./images`
+
+let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is [faster_rcnn_1_7_10021.pth] and you have put it into folder [./data/pretrained_model/res101/pascal_voc/]
+
+then, you could run
+```
+python demo.py --net res101 --checksession 1 --checkepoch 7 --checkpoint 10021 --load_dir ./data/pretrained_model
+```
+you will find the detection results in folder [/images]
+
+
 
 ## Data Preparation
 
@@ -61,20 +74,6 @@ Download them and put them into the data/pretrained_model/.
 **NOTE**. We compare the pretrained models from Pytorch and Caffe, and surprisingly find Caffe pretrained models have slightly better performance than Pytorch pretrained. We would suggest to use Caffe pretrained models from the above link to reproduce our results.
 
 **If you want to use pytorch pre-trained models, please remember to transpose images from BGR to RGB, and also use the same data transformer (minus mean and normalize) as used in pretrained model.**
-
-
-
-## Demo
-
-put your images into folder  [./images]
-
-let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is [faster_rcnn_1_7_10021.pth] and you have put it into folder [./data/pretrained_model/res101/pascal_voc/]
-
-then, you could run
-```
-python demo.py --net res101 --checksession 1 --checkepoch 7 --checkpoint 10021 --load_dir ./data/pretrained_model
-```
-you will find the detection results in folder [/images]
 
 
 
