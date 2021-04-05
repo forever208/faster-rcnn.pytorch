@@ -37,16 +37,16 @@ def parse_args():
     parser.add_argument('--dataset', dest='dataset',
                         help='training dataset',
                         default='pascal_voc', type=str)
-    parser.add_argument('--cfg', dest='cfg_file',
-                        help='optional config file',
-                        default='cfgs/vgg16.yml', type=str)
+    # parser.add_argument('--cfg', dest='cfg_file',
+    #                     help='optional config file',
+    #                     default='cfgs/vgg16.yml', type=str)
     parser.add_argument('--net', dest='net',
                         help='vgg16, res50, res101, res152',
                         default='res101', type=str)
-    parser.add_argument('--set', dest='set_cfgs',
-                        help='set config keys', default=None,
-                        nargs=argparse.REMAINDER)
-    parser.add_argument('--model_dir', dest='load_dir',
+    # parser.add_argument('--set', dest='set_cfgs',
+    #                     help='set config keys', default=None,
+    #                     nargs=argparse.REMAINDER)
+    parser.add_argument('--model_dir', dest='model_dir',
                         help='directory to load models',
                         default="/srv/share/jyang375/models")
     parser.add_argument('--image_dir', dest='image_dir',
@@ -64,15 +64,9 @@ def parse_args():
     parser.add_argument('--parallel_type', dest='parallel_type',
                         help='which part of model to parallel, 0: all, 1: model before roi pooling',
                         default=0, type=int)
-    parser.add_argument('--checksession', dest='checksession',
-                        help='checksession to load model',
-                        default=1, type=int)
-    parser.add_argument('--checkepoch', dest='checkepoch',
-                        help='checkepoch to load network',
-                        default=1, type=int)
-    parser.add_argument('--checkpoint', dest='checkpoint',
-                        help='checkpoint to load network',
-                        default=10021, type=int)
+    parser.add_argument('--model_weights', dest='model_weights',
+                        help='the filename of the pre-trained model weights',
+                        default=None, type=str)
     parser.add_argument('--bs', dest='batch_size',
                         help='batch_size',
                         default=1, type=int)
@@ -134,25 +128,21 @@ if __name__ == '__main__':
     print('Called with args:')
     print(args)
 
-    if args.cfg_file is not None:
-        cfg_from_file(args.cfg_file)
-    if args.set_cfgs is not None:
-        cfg_from_list(args.set_cfgs)
+    # if args.cfg_file is not None:
+    #     cfg_from_file(args.cfg_file)
+    # if args.set_cfgs is not None:
+    #     cfg_from_list(args.set_cfgs)
 
     cfg.USE_GPU_NMS = args.cuda
-
     print('Using config:')
     pprint.pprint(cfg)
     np.random.seed(cfg.RNG_SEED)
 
     # train set
     # -- Note: Use validation set and disable the flipped to enable faster loading.
-
-    input_dir = args.load_dir + "/" + args.net + "/" + args.dataset
-    if not os.path.exists(input_dir):
-        raise Exception('There is no input directory for loading network from ' + input_dir)
-    load_name = os.path.join(input_dir,
-                             'faster_rcnn_{}_{}_{}.pth'.format(args.checksession, args.checkepoch, args.checkpoint))
+    if not os.path.exists(args.model_dir):
+        raise Exception('There is no input directory for loading network from ' + args.model_dir)
+    load_name = os.path.join(args.model_dir, args.model_weights)
 
     pascal_classes = np.asarray(['__background__',
                                  'aeroplane', 'bicycle', 'bird', 'boat',
@@ -161,7 +151,7 @@ if __name__ == '__main__':
                                  'motorbike', 'person', 'pottedplant',
                                  'sheep', 'sofa', 'train', 'tvmonitor'])
 
-    # initilize the network here.
+    # Initialise the network here.
     if args.net == 'vgg16':
         fasterRCNN = vgg16(pascal_classes, pretrained=False, class_agnostic=args.class_agnostic)
     elif args.net == 'res101':
@@ -186,9 +176,6 @@ if __name__ == '__main__':
         cfg.POOLING_MODE = checkpoint['pooling_mode']
 
     print('load model successfully!')
-
-    # pdb.set_trace()
-
     print("load checkpoint %s" % (load_name))
 
     # initilize the tensor holder here.
@@ -212,8 +199,6 @@ if __name__ == '__main__':
 
     if args.cuda > 0:
         cfg.CUDA = True
-
-    if args.cuda > 0:
         fasterRCNN.cuda()
 
     fasterRCNN.eval()
@@ -362,6 +347,7 @@ if __name__ == '__main__':
             print('Frame rate:', frame_rate)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+
     if webcam_num >= 0:
         cap.release()
         cv2.destroyAllWindows()
