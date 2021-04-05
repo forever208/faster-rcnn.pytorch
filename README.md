@@ -1,6 +1,3 @@
-
-
-
 ## Installsation
 
 clone the code
@@ -67,6 +64,20 @@ Download them and put them into the data/pretrained_model/.
 
 
 
+## Demo
+
+put your images into folder  [./images]
+
+let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is [faster_rcnn_1_7_10021.pth] and you have put it into folder [./data/pretrained_model/res101/pascal_voc/]
+
+then, you could run
+```
+python demo.py --net res101 --checksession 1 --checkepoch 7 --checkpoint 10021 --load_dir ./data/pretrained_model
+```
+you will find the detection results in folder [/images]
+
+
+
 ## Train
 
 Before training, set the right directory to save and load the trained models. Change the arguments "save_dir" and "load_dir" in trainval_net.py and test_net.py to adapt to your environment.
@@ -109,22 +120,6 @@ python test_net.py --dataset pascal_voc --net vgg16 \
                    --cuda
 ```
 Specify the specific model session, chechepoch and checkpoint, e.g., SESSION=1, EPOCH=6, CHECKPOINT=416.
-
-## Demo
-
-
-
-put your images into folder  [./images]
-
-let's say, you downloaded the model [faster_rcnn_1_7_10021.pth] and you have put it into folder [./data/pretrained_model/res101/pascal_voc/]
-
-then, you could run
-```
-python demo.py --net res101 --checksession 1 --checkepoch 7 --checkpoint 10021 --load_dir ./data/pretrained_model
-```
-you will find the detection results in folder [/images]
-
-
 
 
 
