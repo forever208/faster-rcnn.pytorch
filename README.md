@@ -1,4 +1,4 @@
-## Installsation
+## Installation
 
 clone the code
 ```
@@ -41,17 +41,17 @@ cd ../../..
 
 put your images into folder  `./images`
 
-let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is [faster_rcnn_1_7_10021.pth] and you have put it into folder [./data/pretrained_model/res101/pascal_voc/]
+let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is `faster_rcnn_1_7_10021.pth` and you have put it into folder `./data/pretrained_model/res101/pascal_voc/`
 
 then, you could run
 ```
 python demo.py --net res101 --checksession 1 --checkepoch 7 --checkpoint 10021 --load_dir ./data/pretrained_model
 ```
-you will find the detection results in folder [/images]
+you will find the detection results in folder `/images`
 
 
 
-## Data Preparation
+## Download Datasets
 
 * **PASCAL_VOC 07+12**: Please follow the instructions in [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn#beyond-the-demo-installation-for-training-and-testing-models) to prepare VOC datasets. Actually, you can refer to any others. After downloading the data, creat softlinks in the folder data/.
 
