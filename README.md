@@ -44,26 +44,49 @@ Thanks to [Remi](https://github.com/Cadene) for providing the pretrained detecti
 * Click the links in the above tables to download our pre-trained faster r-cnn models.
 * If not mentioned, the GPU we used is NVIDIA Titan X Pascal (12GB).
 
-## Preparation
 
 
-First of all, clone the code
+## Installsation
+
+clone the code
 ```
-git clone https://github.com/jwyang/faster-rcnn.pytorch.git
+git clone https://github.com/forever208/faster-rcnn.pytorch.git
 ```
 
-Then, create a folder:
+create a folder to save the pretrained model 
 ```
 cd faster-rcnn.pytorch && mkdir data
+cd data && mkdir pretrained_model
+cd pretrained_model && mkdir res101
+cd res101 && mkdir pascal_voc
 ```
 
-### prerequisites
+#### Compilation
 
-* Python 2.7 or 3.6
-* Pytorch 1.0 (for Pytorch 0.4.0 go to master branch)
-* CUDA 8.0 or higher
+Install all the python dependencies using pip:
+```
+pip install -r requirements.txt
+```
 
-### Data Preparation
+Compile the cuda dependencies using following simple commands:
+```
+cd lib
+python setup.py build develop
+```
+It will compile all the modules you need, including NMS, ROI_Pooing, ROI_Align and ROI_Crop.
+
+#### Install coco_python_API
+```
+cd data
+git clone https://github.com/pdollar/coco.git 
+cd coco/PythonAPI
+make
+cd ../../..
+```
+
+
+
+## Data Preparation
 
 * **PASCAL_VOC 07+12**: Please follow the instructions in [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn#beyond-the-demo-installation-for-training-and-testing-models) to prepare VOC datasets. Actually, you can refer to any others. After downloading the data, creat softlinks in the folder data/.
 
@@ -71,7 +94,9 @@ cd faster-rcnn.pytorch && mkdir data
 
 * **Visual Genome**: Please follow the instructions in [bottom-up-attention](https://github.com/peteanderson80/bottom-up-attention) to prepare Visual Genome dataset. You need to download the images and object annotation files first, and then perform proprecessing to obtain the vocabulary and cleansed annotations based on the scripts provided in this repository.
 
-### Pretrained Model
+
+
+## Pretrained Model
 
 We used two pretrained models in our experiments, VGG and ResNet101. You can download these two models from:
 
@@ -85,23 +110,7 @@ Download them and put them into the data/pretrained_model/.
 
 **If you want to use pytorch pre-trained models, please remember to transpose images from BGR to RGB, and also use the same data transformer (minus mean and normalize) as used in pretrained model.**
 
-### Compilation
 
-Install all the python dependencies using pip:
-```
-pip install -r requirements.txt
-```
-
-Compile the cuda dependencies using following simple commands:
-
-```
-cd lib
-python setup.py build develop
-```
-
-It will compile all the modules you need, including NMS, ROI_Pooing, ROI_Align and ROI_Crop. The default version is compiled with Python 2.7, please compile by yourself if you are using a different python version.
-
-**As pointed out in this [issue](https://github.com/jwyang/faster-rcnn.pytorch/issues/16), if you encounter some error during the compilation, you might miss to export the CUDA paths to your environment.**
 
 ## Train
 
@@ -148,22 +157,17 @@ Specify the specific model session, chechepoch and checkpoint, e.g., SESSION=1, 
 
 ## Demo
 
-If you want to run detection on your own images with a pre-trained model, download the pretrained model listed in above tables or train your own models at first, then add images to folder $ROOT/images, and then run
+download the pretrained model listed in above tables, put then into folder ./data/pretrained_model/res101/pascal_voc/
+put your images into folder ./images
+let's say, you downloaded the model faster_rcnn_1_7_10021.pth, run
 ```
-python demo.py --net vgg16 \
-               --checksession $SESSION --checkepoch $EPOCH --checkpoint $CHECKPOINT \
-               --cuda --load_dir path/to/model/directoy
+python demo.py --net res101 --checksession 1 --checkepoch 7 --checkpoint 10021 --load_dir ./data/pretrained_model
 ```
+Then you will find the detection results in folder /images.
 
-Then you will find the detection results in folder $ROOT/images.
 
-**Note the default demo.py merely support pascal_voc categories. You need to change the [line](https://github.com/jwyang/faster-rcnn.pytorch/blob/530f3fdccaa60d05fa068bc2148695211586bd88/demo.py#L156) to adapt your own model.**
 
-Below are some detection results:
 
-<div style="color:#0000FF" align="center">
-<img src="images/img3_det_res101.jpg" width="430"/> <img src="images/img4_det_res101.jpg" width="430"/>
-</div>
 
 ## Webcam Demo
 
@@ -175,6 +179,8 @@ python demo.py --net vgg16 \
                --webcam $WEBCAM_ID
 ```
 The demo is stopped by clicking the image window and then pressing the 'q' key.
+
+
 
 ## Authorship
 
