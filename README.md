@@ -45,7 +45,7 @@ let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or005
 
 then, you could run
 ```
-python demo.py --net res101 --checksession 1 --checkepoch 7 --checkpoint 10021 --_dir ./data/pretrained_model
+python demo.py --net res101  --model_dir ./data/pretrained_model --model_weights faster_rcnn_1_7_10021.pth
 ```
 you will find the detection results in folder `/images`
 
