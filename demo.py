@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--set', dest='set_cfgs',
                         help='set config keys', default=None,
                         nargs=argparse.REMAINDER)
-    parser.add_argument('--load_dir', dest='load_dir',
+    parser.add_argument('--model_dir', dest='load_dir',
                         help='directory to load models',
                         default="/srv/share/jyang375/models")
     parser.add_argument('--image_dir', dest='image_dir',
