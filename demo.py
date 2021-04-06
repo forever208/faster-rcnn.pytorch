@@ -48,7 +48,10 @@ def parse_args():
     #                     nargs=argparse.REMAINDER)
     parser.add_argument('--model_dir', dest='model_dir',
                         help='directory to load models',
-                        default="/srv/share/jyang375/models")
+                        default=None, type=str)
+    parser.add_argument('--model_weights', dest='model_weights',
+                        help='the filename of the pre-trained model weights',
+                        default=None, type=str)
     parser.add_argument('--image_dir', dest='image_dir',
                         help='directory to load images for demo',
                         default="images")
@@ -64,9 +67,6 @@ def parse_args():
     parser.add_argument('--parallel_type', dest='parallel_type',
                         help='which part of model to parallel, 0: all, 1: model before roi pooling',
                         default=0, type=int)
-    parser.add_argument('--model_weights', dest='model_weights',
-                        help='the filename of the pre-trained model weights',
-                        default=None, type=str)
     parser.add_argument('--bs', dest='batch_size',
                         help='batch_size',
                         default=1, type=int)
@@ -121,10 +121,10 @@ def _get_image_blob(im):
     return blob, np.array(im_scale_factors)
 
 
+
 if __name__ == '__main__':
 
     args = parse_args()
-
     print('Called with args:')
     print(args)
 
@@ -145,13 +145,11 @@ if __name__ == '__main__':
     load_name = os.path.join(args.model_dir, args.model_weights)
 
     pascal_classes = np.asarray(['__background__',
-                                 'aeroplane', 'bicycle', 'bird', 'boat',
-                                 'bottle', 'bus', 'car', 'cat', 'chair',
-                                 'cow', 'diningtable', 'dog', 'horse',
-                                 'motorbike', 'person', 'pottedplant',
+                                 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair',
+                                 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant',
                                  'sheep', 'sofa', 'train', 'tvmonitor'])
 
-    # Initialise the network here.
+    # Initialise the network
     if args.net == 'vgg16':
         fasterRCNN = vgg16(pascal_classes, pretrained=False, class_agnostic=args.class_agnostic)
     elif args.net == 'res101':
@@ -217,23 +215,22 @@ if __name__ == '__main__':
         imglist = os.listdir(args.image_dir)
         num_images = len(imglist)
 
-    print('Loaded Photo: {} images.'.format(num_images))
+    print('Loaded: {} images.'.format(num_images))
 
-    while (num_images >= 0):
+    while num_images >= 0:
         total_tic = time.time()
         if webcam_num == -1:
             num_images -= 1
 
-        # Get image from the webcam
+        # Load images from the webcam
         if webcam_num >= 0:
             if not cap.isOpened():
                 raise RuntimeError("Webcam could not open. Please check connection.")
             ret, frame = cap.read()
             im_in = np.array(frame)
-        # Load the demo image
+        # Load images from image folder
         else:
             im_file = os.path.join(args.image_dir, imglist[num_images])
-            # im = cv2.imread(im_file)
             im_in = np.array(io.imread(im_file))
         if len(im_in.shape) == 2:
             im_in = im_in[:, :, np.newaxis]
@@ -256,13 +253,11 @@ if __name__ == '__main__':
             gt_boxes.resize_(1, 1, 5).zero_()
             num_boxes.resize_(1).zero_()
 
-        # pdb.set_trace()
         det_tic = time.time()
 
-        rois, cls_prob, bbox_pred, \
-        rpn_loss_cls, rpn_loss_box, \
-        RCNN_loss_cls, RCNN_loss_bbox, \
-        rois_label = fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
+        # get the predictions
+        rois, cls_prob, bbox_pred, rpn_loss_cls, rpn_loss_box, \
+        RCNN_loss_cls, RCNN_loss_bbox, rois_label = fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
 
         scores = cls_prob.data
         boxes = rois.data[:, :, 1:5]
