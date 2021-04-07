@@ -9,8 +9,6 @@ create a folder to save the pretrained model
 ```
 cd faster-rcnn.pytorch && mkdir data
 cd data && mkdir pretrained_model
-cd pretrained_model && mkdir res101
-cd res101 && mkdir pascal_voc
 ```
 
 #### Compilation
@@ -41,7 +39,7 @@ cd ../../..
 
 put your images into folder  `./images`
 
-let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is `faster_rcnn_1_7_10021.pth` and you have put it into folder `./data/pretrained_model/res101/pascal_voc/`
+let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is `faster_rcnn_1_7_10021.pth` and you have put it into folder `./data/pretrained_model/`
 
 then, you could run
 ```
