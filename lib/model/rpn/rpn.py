@@ -62,14 +62,14 @@ class _RPN(nn.Module):
         # get rpn offsets to the pre-defined anchor boxes
         rpn_bbox_pred = self.RPN_bbox_pred(rpn_conv1)  # (batch, 36, h, w)
 
-        # proposal layer
+        # get the proposals whose shape is (batch, 300, 5), 300 proposals for each test image
         cfg_key = 'TRAIN' if self.training else 'TEST'
         rois = self.RPN_proposal((rpn_cls_prob.data, rpn_bbox_pred.data, im_info, cfg_key))
 
         self.rpn_loss_cls = 0
         self.rpn_loss_box = 0
 
-        # generating training labels and build the rpn loss
+        # generating training labels and compute the rpn loss
         if self.training:
             assert gt_boxes is not None
 
