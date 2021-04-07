@@ -40,7 +40,7 @@ class _fasterRCNN(nn.Module):
         # img --> backbone --> feature maps, self.RCNN_base will be defined in resnet/vgg class
         base_feat = self.RCNN_base(im_data)
 
-        # feed base feature map tp RPN to obtain rois
+        # feature map --> RPN --> rois
         rois, rpn_loss_cls, rpn_loss_bbox = self.RCNN_rpn(base_feat, im_info, gt_boxes, num_boxes)
 
         # if it is training phrase, then use ground truth bboxes for refining
@@ -60,15 +60,15 @@ class _fasterRCNN(nn.Module):
             rpn_loss_cls = 0
             rpn_loss_bbox = 0
 
+        # rois --> roi pooling --> pooled features
         rois = Variable(rois)
         if cfg.POOLING_MODE == 'align':
             pooled_feat = self.RCNN_roi_align(base_feat, rois.view(-1, 5))
         elif cfg.POOLING_MODE == 'pool':
             pooled_feat = self.RCNN_roi_pool(base_feat, rois.view(-1, 5))
 
-        # feed pooled features to top model
+        # pooled features --> get predictions
         pooled_feat = self._head_to_tail(pooled_feat)
-
         bbox_pred = self.RCNN_bbox_pred(pooled_feat)
 
         # compute bbox offset for training phase
@@ -101,7 +101,7 @@ class _fasterRCNN(nn.Module):
     def _init_weights(self):
         def normal_init(m, mean, stddev, truncated=False):
             """
-            weight initalizer: truncated normal and random normal.
+            weight initializer: truncated normal and random normal.
             """
             # x is a parameter
             if truncated:
