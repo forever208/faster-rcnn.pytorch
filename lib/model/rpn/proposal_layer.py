@@ -51,8 +51,8 @@ class _ProposalLayer(nn.Module):
         take after_nms_topN proposals after NMS
         return the top proposals (-> RoIs top, scores top)
 
-        @param input: a tuple (rpn_cls_prob, rpn_bbox_pred, im_info, cfg_key)
-                      ((batch,18,h,w), (batch,36,h,w),  ,'train/test')
+        @param input: a tuple (rpn_cls_prob,    rpn_bbox_pred,   im_info,  cfg_key)
+                              ((batch,18,h,w), (batch,36,h,w), (batch, 2), 'train/test')
         @return:
         """
 
@@ -79,25 +79,25 @@ class _ProposalLayer(nn.Module):
         K = shifts.size(0)    # feat_height * feat_width
 
         self._anchors = self._anchors.type_as(scores)
-        anchors = self._anchors.view(1, A, 4) + shifts.view(K, 1, 4)  # (K, 9, 4)
-        anchors = anchors.view(1, K*A, 4).expand(batch_size, K*A, 4)
+        anchors = self._anchors.view(1, A, 4) + shifts.view(K, 1, 4)  # (h*w, 9, 4)
+        anchors = anchors.view(1, K*A, 4).expand(batch_size, K*A, 4)  # (batch, h*w*9, 4)
 
-        # reshape bbox offset, make them the same order with the anchors:
+        # make bbox offset the same order with the anchors:
         bbox_offsets = bbox_offsets.permute(0, 2, 3, 1).contiguous()
-        bbox_offsets = bbox_offsets.view(batch_size, -1, 4)
+        bbox_offsets = bbox_offsets.view(batch_size, -1, 4)  # (batch, h*w*9, 4)
 
-        # reshape cls_score, make them the same order with the anchors:
+        # make cls_score the same order with the anchors:
         scores = scores.permute(0, 2, 3, 1).contiguous()
-        scores = scores.view(batch_size, -1)  # (batch, 18*w*h)
+        scores = scores.view(batch_size, -1)  # (batch, 9*w*h)
 
-        # Convert anchors into proposals
-        proposals = bbox_transform_inv(anchors, bbox_offsets, batch_size)
+        # Convert anchors into proposal bboxes
+        proposals = bbox_transform_inv(anchors, bbox_offsets)  # (batch, h*w*9, 4) with format x1,y1,x2,y2 (fm size)
 
         # 2. clip predicted boxes to image
-        proposals = clip_boxes(proposals, im_info, batch_size)
+        proposals = clip_boxes(proposals, im_info, batch_size)  # (batch, h*w*9, 4) with format x1,y1,x2,y2 (img size)
         scores_keep = scores
         proposals_keep = proposals
-        _, order = torch.sort(scores_keep, 1, True)
+        _, order = torch.sort(scores_keep, 1, True)  # descending order (batch, h*w*9)
 
         # initialise the proposals by creating a zero tensor
         output = scores.new(batch_size, post_nms_topN, 5).zero_()  # (batch, 300, 5)

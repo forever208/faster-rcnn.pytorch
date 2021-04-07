@@ -76,7 +76,13 @@ def bbox_transform_batch(ex_rois, gt_rois):
     return targets
 
 
-def bbox_transform_inv(boxes, deltas, batch_size):
+def bbox_transform_inv(boxes, deltas):
+    """
+
+    @param boxes: anchors (batch, h*w*9, 4)
+    @param deltas: offsets (batch, h*w*9, 4)
+    @return: bboxes with shape (batch, h*w*9, 4) with format x1,y1,x2,y2
+    """
     widths = boxes[:, :, 2] - boxes[:, :, 0] + 1.0
     heights = boxes[:, :, 3] - boxes[:, :, 1] + 1.0
     ctr_x = boxes[:, :, 0] + 0.5 * widths
@@ -93,14 +99,11 @@ def bbox_transform_inv(boxes, deltas, batch_size):
     pred_h = torch.exp(dh) * heights.unsqueeze(2)
 
     pred_boxes = deltas.clone()
-    # x1
-    pred_boxes[:, :, 0::4] = pred_ctr_x - 0.5 * pred_w
-    # y1
-    pred_boxes[:, :, 1::4] = pred_ctr_y - 0.5 * pred_h
-    # x2
-    pred_boxes[:, :, 2::4] = pred_ctr_x + 0.5 * pred_w
-    # y2
-    pred_boxes[:, :, 3::4] = pred_ctr_y + 0.5 * pred_h
+
+    pred_boxes[:, :, 0::4] = pred_ctr_x - 0.5 * pred_w  # x1
+    pred_boxes[:, :, 1::4] = pred_ctr_y - 0.5 * pred_h  # y1
+    pred_boxes[:, :, 2::4] = pred_ctr_x + 0.5 * pred_w  # x2
+    pred_boxes[:, :, 3::4] = pred_ctr_y + 0.5 * pred_h  # y2
 
     return pred_boxes
 
