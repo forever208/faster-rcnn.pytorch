@@ -43,7 +43,7 @@ class _fasterRCNN(nn.Module):
         # feed base feature map tp RPN to obtain rois
         rois, rpn_loss_cls, rpn_loss_bbox = self.RCNN_rpn(base_feat, im_info, gt_boxes, num_boxes)
 
-        # if it is training phrase, then use ground trubut bboxes for refining
+        # if it is training phrase, then use ground truth bboxes for refining
         if self.training:
             roi_data = self.RCNN_proposal_target(rois, gt_boxes, num_boxes)
             rois, rois_label, rois_target, rois_inside_ws, rois_outside_ws = roi_data
@@ -61,8 +61,6 @@ class _fasterRCNN(nn.Module):
             rpn_loss_bbox = 0
 
         rois = Variable(rois)
-        # do roi pooling based on predicted rois
-
         if cfg.POOLING_MODE == 'align':
             pooled_feat = self.RCNN_roi_align(base_feat, rois.view(-1, 5))
         elif cfg.POOLING_MODE == 'pool':
@@ -71,8 +69,9 @@ class _fasterRCNN(nn.Module):
         # feed pooled features to top model
         pooled_feat = self._head_to_tail(pooled_feat)
 
-        # compute bbox offset
         bbox_pred = self.RCNN_bbox_pred(pooled_feat)
+
+        # compute bbox offset for training phase
         if self.training and not self.class_agnostic:
             # select the corresponding columns according to roi labels
             bbox_pred_view = bbox_pred.view(bbox_pred.size(0), int(bbox_pred.size(1) / 4), 4)
