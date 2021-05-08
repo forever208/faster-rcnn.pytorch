@@ -36,7 +36,7 @@ cd ../../..
 ```
 
 
-## 2. Run demo (test detection on images)
+## 2. Run demo (detect images)
 
 #### download pre-trained weights manually
 put your images into folder  `./images`
