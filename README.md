@@ -76,7 +76,7 @@ We used two pretrained models in our experiments, VGG and ResNet101. You can dow
 
 * ResNet101: [Dropbox](https://www.dropbox.com/s/iev3tkbz5wyyuz9/resnet101_caffe.pth?dl=0), [VT Server](https://filebox.ece.vt.edu/~jw2yang/faster-rcnn/pretrained-base-models/resnet101_caffe.pth)
 
-Download them and put them into the data/pretrained_model/.
+Download them and put them into the folder `./data/pretrained_model/`
 
 **NOTE**. We compare the pretrained models from Pytorch and Caffe, and surprisingly find Caffe pretrained models have slightly better performance than Pytorch pretrained. We would suggest to use Caffe pretrained models from the above link to reproduce our results.
 
