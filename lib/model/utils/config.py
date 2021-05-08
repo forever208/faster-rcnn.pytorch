@@ -156,6 +156,7 @@ __C.TRAIN.USE_ALL_GT = True
 # Whether to tune the batch normalization parameters during training
 __C.TRAIN.BN_TRAIN = False
 
+
 """Testing parameters"""
 __C.TEST = edict()
 

@@ -62,7 +62,8 @@ class _RPN(nn.Module):
         # get rpn offsets to the pre-defined anchor boxes
         rpn_bbox_pred = self.RPN_bbox_pred(rpn_conv1)  # (batch, 36, h, w)
 
-        # get the proposals whose shape is (batch, 300, 5), 300 proposals for each test image
+        # get the 300 proposals for each test image
+        # rois has shape (batch, 300, 5) maximum 300 proposals, each row is [batch_ind, x1, y1, x2, y2]
         cfg_key = 'TRAIN' if self.training else 'TEST'
         rois = self.RPN_proposal((rpn_cls_prob.data, rpn_bbox_pred.data, im_info, cfg_key))
 

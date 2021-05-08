@@ -145,6 +145,7 @@ class sampler(Sampler):
   def __len__(self):
     return self.num_data
 
+
 if __name__ == '__main__':
 
   args = parse_args()

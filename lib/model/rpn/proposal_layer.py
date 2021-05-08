@@ -53,7 +53,7 @@ class _ProposalLayer(nn.Module):
 
         @param input: a tuple (rpn_cls_prob,    rpn_bbox_pred,   im_info,  cfg_key)
                               ((batch,18,h,w), (batch,36,h,w), (batch, 2), 'train/test')
-        @return:
+        @return: rois (batch, 300, 5), maximum 300 proposals, each row is [batch_ind, x1, y1, x2, y2]
         """
 
         scores = input[0][:, self._num_anchors:, :, :]  # take the positive (object) scores
@@ -61,7 +61,7 @@ class _ProposalLayer(nn.Module):
         im_info = input[2]
         cfg_key = input[3]
 
-        pre_nms_topN = cfg[cfg_key].RPN_PRE_NMS_TOP_N  # 6000 for test
+        pre_nms_topN = cfg[cfg_key].RPN_PRE_NMS_TOP_N  # 6000 for train
         post_nms_topN = cfg[cfg_key].RPN_POST_NMS_TOP_N  # 300 for test
         nms_thresh = cfg[cfg_key].RPN_NMS_THRESH  # 0.7
         min_size = cfg[cfg_key].RPN_MIN_SIZE  # 16
@@ -88,7 +88,7 @@ class _ProposalLayer(nn.Module):
 
         # make cls_score the same order with the anchors:
         scores = scores.permute(0, 2, 3, 1).contiguous()
-        scores = scores.view(batch_size, -1)  # (batch, 9*w*h)
+        scores = scores.view(batch_size, -1)  # (batch, h*w*9)
 
         # Convert anchors into proposal bboxes
         proposals = bbox_transform_inv(anchors, bbox_offsets)  # (batch, h*w*9, 4) with format x1,y1,x2,y2 (fm size)
@@ -104,16 +104,15 @@ class _ProposalLayer(nn.Module):
         for i in range(batch_size):
             # 3. remove predicted boxes with either height or width < threshold
             # (NOTE: convert min_size to input image scale stored in im_info[2])
-            proposals_single = proposals_keep[i]
-            scores_single = scores_keep[i]
+            proposals_single = proposals_keep[i]  # (h*w*9, 4) with format x1,y1,x2,y2 (img size)
+            scores_single = scores_keep[i]  # (h*w*9)
 
             # 4. sort all (proposal, score) pairs by score from highest to lowest
-            # 5. take top pre_nms_topN (e.g. 6000)
-            order_single = order[i]
-
+            order_single = order[i]  # (h*w*9)
             if pre_nms_topN > 0 and pre_nms_topN < scores_keep.numel():
                 order_single = order_single[:pre_nms_topN]
 
+            # 5. take top pre_nms_topN (e.g. 6000) proposals and scores
             proposals_single = proposals_single[order_single, :]
             scores_single = scores_single[order_single].view(-1, 1)
 
@@ -133,7 +132,7 @@ class _ProposalLayer(nn.Module):
             output[i, :, 0] = i
             output[i, :num_proposal, 1:] = proposals_single
 
-        return output
+        return output  # (batch, 300, 5) maximum 300 proposals, each row is [batch_ind, x1, y1, x2, y2]
 
     def backward(self, top, propagate_down, bottom):
         """This layer does not propagate gradients."""
