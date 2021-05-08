@@ -39,7 +39,6 @@ cd ../../..
 ## 2. Run demo (detect images)
 
 #### download pre-trained weights manually
-put your images into folder  `./images`
 
 let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is `faster_rcnn_1_7_10021.pth` and you have put it into folder `./data/pretrained_model/`
 
@@ -51,6 +50,7 @@ cd ../..
 ```
 
 #### run demo
+put your images into folder  `./images`, then run demo
 ```
 python demo.py --net res101  --model_dir ./data/pretrained_model --model_weights faster_rcnn_1_7_10021.pth
 ```
