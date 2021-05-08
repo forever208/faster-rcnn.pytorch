@@ -1,4 +1,4 @@
-## 1. Installation
+## 【1】Installation
 
 clone the code
 ```
@@ -36,7 +36,7 @@ cd ../../..
 ```
 
 
-## 2. Run demo (detect images)
+## 【2】Run demo (detect images)
 
 #### download pre-trained weights manually
 
@@ -58,7 +58,7 @@ you will find the detection results in folder `/images`
 
 
 
-## 3. Download Datasets
+## 【3】Download Datasets
 
 * **PASCAL_VOC 07+12**: Please follow the instructions in [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn#beyond-the-demo-installation-for-training-and-testing-models) to prepare VOC datasets. Actually, you can refer to any others. After downloading the data, creat softlinks in the folder data/.
 
@@ -68,7 +68,7 @@ you will find the detection results in folder `/images`
 
 
 
-## 4. Pretrained Model
+## 【4】Pretrained Model
 
 We used two pretrained models in our experiments, VGG and ResNet101. You can download these two models from:
 
@@ -84,7 +84,7 @@ Download them and put them into the data/pretrained_model/.
 
 
 
-## 5. Train
+## 【5】Train
 
 Before training, set the right directory to save and load the trained models. Change the arguments "save_dir" and "load_dir" in trainval_net.py and test_net.py to adapt to your environment.
 
@@ -117,7 +117,7 @@ python trainval_net.py --dataset pascal_voc --net vgg16 \
 
 Change dataset to "coco" or 'vg' if you want to train on COCO or Visual Genome.
 
-## 6. Test
+## 【6】Test
 
 If you want to evlauate the detection performance of a pre-trained vgg16 model on pascal_voc test set, simply run
 ```
@@ -129,7 +129,7 @@ Specify the specific model session, chechepoch and checkpoint, e.g., SESSION=1, 
 
 
 
-## 7. Benchmarking
+## 【7】Benchmarking
 
 We benchmark our code thoroughly on three datasets: pascal voc, coco and imagenet-200, using two different network architecture: vgg16 and resnet101. Below are the results:
 
