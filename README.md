@@ -15,6 +15,7 @@ cd data && mkdir pretrained_model
 
 Install all the python dependencies using pip:
 ```
+cd ..
 pip install -r requirements.txt
 ```
 
