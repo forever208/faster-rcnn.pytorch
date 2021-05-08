@@ -1,4 +1,4 @@
-## Installation
+## 【1】Installation
 
 clone the code
 ```
@@ -15,6 +15,7 @@ cd data && mkdir pretrained_model
 
 Install all the python dependencies using pip:
 ```
+cd ..
 pip install -r requirements.txt
 ```
 
@@ -35,13 +36,21 @@ cd ../../..
 ```
 
 
-## run demo (test detection on images)
+## 【2】Run demo (detect images)
 
-put your images into folder  `./images`
+#### download pre-trained weights manually
 
 let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is `faster_rcnn_1_7_10021.pth` and you have put it into folder `./data/pretrained_model/`
 
-then, you could run
+#### download pre-trained weights by command (I saved the file in my Gdrive)
+```
+cd data/pretrained_model/
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1n-YUaO0O2aJhWwZ_7DVF-xFJXK5JaZbR' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1n-YUaO0O2aJhWwZ_7DVF-xFJXK5JaZbR" -O faster_rcnn_1_7_10021.pth && rm -rf /tmp/cookies.txt
+cd ../..
+```
+
+#### run demo
+put your images into folder  `./images`, then run demo
 ```
 python demo.py --net res101  --model_dir ./data/pretrained_model --model_weights faster_rcnn_1_7_10021.pth
 ```
@@ -49,7 +58,7 @@ you will find the detection results in folder `/images`
 
 
 
-## Download Datasets
+## 【3】Download Datasets
 
 * **PASCAL_VOC 07+12**: Please follow the instructions in [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn#beyond-the-demo-installation-for-training-and-testing-models) to prepare VOC datasets. Actually, you can refer to any others. After downloading the data, creat softlinks in the folder data/.
 
@@ -59,7 +68,7 @@ you will find the detection results in folder `/images`
 
 
 
-## Pretrained Model
+## 【4】Pretrained Model
 
 We used two pretrained models in our experiments, VGG and ResNet101. You can download these two models from:
 
@@ -67,7 +76,7 @@ We used two pretrained models in our experiments, VGG and ResNet101. You can dow
 
 * ResNet101: [Dropbox](https://www.dropbox.com/s/iev3tkbz5wyyuz9/resnet101_caffe.pth?dl=0), [VT Server](https://filebox.ece.vt.edu/~jw2yang/faster-rcnn/pretrained-base-models/resnet101_caffe.pth)
 
-Download them and put them into the data/pretrained_model/.
+Download them and put them into the folder `./data/pretrained_model/`
 
 **NOTE**. We compare the pretrained models from Pytorch and Caffe, and surprisingly find Caffe pretrained models have slightly better performance than Pytorch pretrained. We would suggest to use Caffe pretrained models from the above link to reproduce our results.
 
@@ -75,7 +84,7 @@ Download them and put them into the data/pretrained_model/.
 
 
 
-## Train
+## 【5】Train
 
 Before training, set the right directory to save and load the trained models. Change the arguments "save_dir" and "load_dir" in trainval_net.py and test_net.py to adapt to your environment.
 
@@ -108,7 +117,7 @@ python trainval_net.py --dataset pascal_voc --net vgg16 \
 
 Change dataset to "coco" or 'vg' if you want to train on COCO or Visual Genome.
 
-## Test
+## 【6】Test
 
 If you want to evlauate the detection performance of a pre-trained vgg16 model on pascal_voc test set, simply run
 ```
@@ -120,7 +129,7 @@ Specify the specific model session, chechepoch and checkpoint, e.g., SESSION=1, 
 
 
 
-## Benchmarking
+## 【7】Benchmarking
 
 We benchmark our code thoroughly on three datasets: pascal voc, coco and imagenet-200, using two different network architecture: vgg16 and resnet101. Below are the results:
 
