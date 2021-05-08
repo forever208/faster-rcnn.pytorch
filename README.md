@@ -51,7 +51,6 @@ cd ../..
 ```
 
 #### run demo
-then, you could run
 ```
 python demo.py --net res101  --model_dir ./data/pretrained_model --model_weights faster_rcnn_1_7_10021.pth
 ```
