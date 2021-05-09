@@ -178,10 +178,10 @@ if __name__ == '__main__':
     # build up dataloader pipeline
     sampler_batch = sampler(train_size, args.batch_size)
     dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size, imdb.num_classes, training=True)
-    # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
-    #                                          sampler=sampler_batch, num_workers=args.num_workers)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
-                                             shuffle=True, num_workers=args.num_workers)
+                                             sampler=sampler_batch, num_workers=args.num_workers)
+    # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
+    #                                          shuffle=True, num_workers=args.num_workers)
 
     # initialize the tensor holder
     im_data = torch.FloatTensor(1)
