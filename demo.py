@@ -3,6 +3,9 @@
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Jiasen Lu, Jianwei Yang, based on code from Ross Girshick
 # --------------------------------------------------------
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import os
 import sys
@@ -15,7 +18,7 @@ import torch
 from torch.autograd import Variable
 
 from skimage import io
-from model.utils.config import cfg
+from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from model.rpn.bbox_transform import clip_boxes
 from model.roi_layers import nms
 from model.rpn.bbox_transform import bbox_transform_inv
@@ -27,10 +30,22 @@ import pdb
 
 
 def parse_args():
+    """
+    Parse input arguments
+    """
     parser = argparse.ArgumentParser(description='Train a Fast R-CNN network')
+    # parser.add_argument('--dataset', dest='dataset',
+    #                     help='training dataset',
+    #                     default='pascal_voc', type=str)
+    # parser.add_argument('--cfg', dest='cfg_file',
+    #                     help='optional config file',
+    #                     default='cfgs/vgg16.yml', type=str)
     parser.add_argument('--net', dest='net',
                         help='vgg16, res50, res101, res152',
                         default='res101', type=str)
+    # parser.add_argument('--set', dest='set_cfgs',
+    #                     help='set config keys', default=None,
+    #                     nargs=argparse.REMAINDER)
     parser.add_argument('--model_dir', dest='model_dir',
                         help='directory to load models',
                         default="./data/pretrained_model", type=str)
@@ -58,9 +73,17 @@ def parse_args():
     parser.add_argument('--vis', dest='vis',
                         help='visualization mode',
                         action='store_true')
+    parser.add_argument('--webcam_num', dest='webcam_num',
+                        help='webcam ID number',
+                        default=1, type=int)
 
     args = parser.parse_args()
     return args
+
+
+# lr = cfg.TRAIN.LEARNING_RATE
+# momentum = cfg.TRAIN.MOMENTUM
+# weight_decay = cfg.TRAIN.WEIGHT_DECAY
 
 
 def _get_image_blob(img):
@@ -68,7 +91,7 @@ def _get_image_blob(img):
     Convert one image into a network input.
     @param img: BGR images (nd array)
     @return: blob, a data blob holding an image pyramid (nd array)
-             im_scale_factors, a list of image scales (relative to im)
+             im_scale_factors, a list of image scales (relative to im) used
     """
     im_orig = img.astype(np.float32, copy=True)
     im_orig -= cfg.PIXEL_MEANS
@@ -80,7 +103,7 @@ def _get_image_blob(img):
     processed_ims = []
     im_scale_factors = []
 
-    # reshape img size to (600, x) where x<=800
+    # reshape img size to (600, x) x_max=800
     for target_size in cfg.TEST.SCALES:
         im_scale = float(target_size) / float(im_size_min)    # 600 / shorter_side(w/h)
         if np.round(im_scale*im_size_max) > cfg.TEST.MAX_SIZE:
@@ -90,8 +113,12 @@ def _get_image_blob(img):
         im_scale_factors.append(im_scale)
         processed_ims.append(img)
 
+    for i in processed_ims:
+        print('[1]', i.shape)
     # Create a blob to hold the input images
     blob = im_list_to_blob(processed_ims)
+    for i in blob:
+        print('[2]', i.shape)
 
     return blob, np.array(im_scale_factors)
 
@@ -101,6 +128,11 @@ if __name__ == '__main__':
     args = parse_args()
     print('Called with args:')
     print(args)
+
+    # if args.cfg_file is not None:
+    #     cfg_from_file(args.cfg_file)
+    # if args.set_cfgs is not None:
+    #     cfg_from_list(args.set_cfgs)
 
     cfg.USE_GPU_NMS = args.cuda
     print('Using config:')
@@ -173,19 +205,33 @@ if __name__ == '__main__':
     start = time.time()
     max_per_image = 100
     thresh = 0.05
+    vis = True
 
-    # Load images from local folder
-    imglist = os.listdir(args.image_dir)
-    num_images = len(imglist)
+    webcam_num = args.webcam_num
+    # get images from webcam or the folder
+    if webcam_num >= 0:
+        cap = cv2.VideoCapture(webcam_num)
+        num_images = 0
+    else:
+        imglist = os.listdir(args.image_dir)
+        num_images = len(imglist)
     print('Loaded: {} images.'.format(num_images))
 
-    while num_images > 0:
+    while num_images >= 0:
         total_tic = time.time()
-        num_images -= 1
+        if webcam_num == -1:
+            num_images -= 1
 
-        # Load images
-        im_file = os.path.join(args.image_dir, imglist[num_images])
-        im_in = np.array(io.imread(im_file))
+        # Load images from the webcam
+        if webcam_num >= 0:
+            if not cap.isOpened():
+                raise RuntimeError("Webcam could not open. Please check connection.")
+            ret, frame = cap.read()
+            im_in = np.array(frame)
+        # Load images from image folder
+        else:
+            im_file = os.path.join(args.image_dir, imglist[num_images])
+            im_in = np.array(io.imread(im_file))
 
         if len(im_in.shape) == 2:
             im_in = im_in[:, :, np.newaxis]
@@ -194,8 +240,10 @@ if __name__ == '__main__':
         im = im_in[:, :, ::-1]
 
         blobs, im_scales = _get_image_blob(im)
+        assert len(im_scales) == 1, "Only single-image batch implemented"
         im_blob = blobs
         im_info_np = np.array([[im_blob.shape[1], im_blob.shape[2], im_scales[0]]], dtype=np.float32)
+
         im_data_pt = torch.from_numpy(im_blob)
         im_data_pt = im_data_pt.permute(0, 3, 1, 2)
         im_info_pt = torch.from_numpy(im_info_np)
@@ -215,11 +263,11 @@ if __name__ == '__main__':
         scores = cls_prob.data
         boxes = rois.data[:, :, 1:5]
 
-        # Apply bounding-box regression deltas
         if cfg.TEST.BBOX_REG:
+            # Apply bounding-box regression deltas
             box_deltas = bbox_pred.data
-            # Optionally normalize targets by a precomputed mean and stdev
             if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
+                # Optionally normalize targets by a precomputed mean and stdev
                 if args.class_agnostic:
                     if args.cuda > 0:
                         box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
@@ -245,30 +293,57 @@ if __name__ == '__main__':
             pred_boxes = np.tile(boxes, (1, scores.shape[1]))
 
         pred_boxes /= im_scales[0]
+
         scores = scores.squeeze()
         pred_boxes = pred_boxes.squeeze()
         det_toc = time.time()
         detect_time = det_toc - det_tic
-        print('remain images:{:d}/{:d}, current image use:{:.3f}s'.format(num_images+1, len(imglist), detect_time))
-        im2show = np.copy(im)
-
-        # remove low score bbox, do NMS, match the cls name
+        misc_tic = time.time()
+        if vis:
+            im2show = np.copy(im)
         for j in range(1, len(pascal_classes)):
             inds = torch.nonzero(scores[:, j] > thresh).view(-1)
+            # if there is det
             if inds.numel() > 0:
                 cls_scores = scores[:, j][inds]
                 _, order = torch.sort(cls_scores, 0, True)
                 if args.class_agnostic:
                     cls_boxes = pred_boxes[inds, :]
                 else:
-                    cls_boxes = pred_boxes[inds][:, j*4 : (j+1)*4]
+                    cls_boxes = pred_boxes[inds][:, j * 4:(j + 1) * 4]
 
                 cls_dets = torch.cat((cls_boxes, cls_scores.unsqueeze(1)), 1)
+                # cls_dets = torch.cat((cls_boxes, cls_scores), 1)
                 cls_dets = cls_dets[order]
+                # keep = nms(cls_dets, cfg.TEST.NMS, force_cpu=not cfg.USE_GPU_NMS)
                 keep = nms(cls_boxes[order, :], cls_scores[order], cfg.TEST.NMS)
                 cls_dets = cls_dets[keep.view(-1).long()]
-                im2show = vis_detections(im2show, pascal_classes[j], cls_dets.cpu().numpy(), 0.5)
+                if vis:
+                    im2show = vis_detections(im2show, pascal_classes[j], cls_dets.cpu().numpy(), 0.5)
 
-        # save the detected images
-        result_path = os.path.join(args.image_dir, imglist[num_images][:-4] + "_det.jpg")
-        cv2.imwrite(result_path, im2show)
+        misc_toc = time.time()
+        nms_time = misc_toc - misc_tic
+
+        if webcam_num == -1:
+            sys.stdout.write('im_detect: {:d}/{:d} {:.3f}s {:.3f}s   \r' \
+                             .format(num_images+1, len(imglist), detect_time, nms_time))
+            sys.stdout.flush()
+
+        if vis and webcam_num == -1:
+            # cv2.imshow('test', im2show)
+            # cv2.waitKey(0)
+            result_path = os.path.join(args.image_dir, imglist[num_images][:-4] + "_det.jpg")
+            cv2.imwrite(result_path, im2show)
+        else:
+            im2showRGB = cv2.cvtColor(im2show, cv2.COLOR_BGR2RGB)
+            cv2.imshow("frame", im2showRGB)
+            total_toc = time.time()
+            total_time = total_toc - total_tic
+            frame_rate = 1 / total_time
+            print('Frame rate:', frame_rate)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+    if webcam_num >= 0:
+        cap.release()
+        cv2.destroyAllWindows()
