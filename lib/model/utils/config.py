@@ -364,7 +364,10 @@ def cfg_from_file(filename):
 
 
 def cfg_from_list(cfg_list):
-    """Set config keys via list (e.g., from command line)."""
+    """
+    Set config keys via list (e.g., from command line).
+    @param cfg_list: ['ANCHOR_SCALES', '[4, 8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '50']
+    """
     from ast import literal_eval
     assert len(cfg_list) % 2 == 0
     for k, v in zip(cfg_list[0::2], cfg_list[1::2]):
