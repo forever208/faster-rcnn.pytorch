@@ -18,8 +18,8 @@ from torch.utils.data.sampler import Sampler
 
 from roi_data_layer.roidb import combined_roidb
 from roi_data_layer.roibatchLoader import roibatchLoader
-from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
-from model.utils.net_utils import weights_normal_init, save_net, load_net, adjust_learning_rate, save_checkpoint, clip_gradient
+from model.utils.config import cfg
+from model.utils.net_utils import adjust_learning_rate, save_checkpoint, clip_gradient
 from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet
 
@@ -66,20 +66,6 @@ def parse_args():
     parser.add_argument('--cag', dest='class_agnostic',
                         help='whether perform class_agnostic bbox regression',
                         action='store_true')
-
-    # config optimization
-    parser.add_argument('--o', dest='optimizer',
-                        help='training optimizer',
-                        default="adam", type=str)
-    parser.add_argument('--lr', dest='lr',
-                        help='starting learning rate',
-                        default=0.001, type=float)
-    parser.add_argument('--lr_decay_step', dest='lr_decay_step',
-                        help='step to do learning rate decay, unit is epoch',
-                        default=5, type=int)
-    parser.add_argument('--lr_decay_gamma', dest='lr_decay_gamma',
-                        help='learning rate decay ratio',
-                        default=0.1, type=float)
 
     # set training session
     parser.add_argument('--s', dest='session',
@@ -220,44 +206,14 @@ if __name__ == '__main__':
 
     fasterRCNN.create_architecture()
 
-    # set optimizer and lr
-    lr = cfg.TRAIN.LEARNING_RATE
-    lr = args.lr
-    params = []
-    for key, value in dict(fasterRCNN.named_parameters()).items():
-        if value.requires_grad:
-            if 'bias' in key:
-                params += [{'params': [value], 'lr': lr * (cfg.TRAIN.DOUBLE_BIAS + 1), \
-                            'weight_decay': cfg.TRAIN.BIAS_DECAY and cfg.TRAIN.WEIGHT_DECAY or 0}]
-            else:
-                params += [{'params': [value], 'lr': lr, 'weight_decay': cfg.TRAIN.WEIGHT_DECAY}]
-
     if args.cuda:
         fasterRCNN.cuda()
-
-    if args.optimizer == "adam":
-        lr = lr * 0.1
-        optimizer = torch.optim.Adam(params)
-    elif args.optimizer == "sgd":
-        optimizer = torch.optim.SGD(params, momentum=cfg.TRAIN.MOMENTUM)
-
-    # load the weights of the whole Faster RCNN
-    if args.resume:
-        load_name = os.path.join(output_dir,
-                                 'faster_rcnn_{}_{}_{}.pth'.format(args.checksession, args.checkepoch, args.checkpoint))
-        print("loading checkpoint %s" % (load_name))
-        checkpoint = torch.load(load_name)
-        args.session = checkpoint['session']
-        args.start_epoch = checkpoint['epoch']
-        fasterRCNN.load_state_dict(checkpoint['model'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        lr = optimizer.param_groups[0]['lr']
-        if 'pooling_mode' in checkpoint.keys():
-            cfg.POOLING_MODE = checkpoint['pooling_mode']
-        print("loaded checkpoint %s" % (load_name))
-
     if args.mGPUs:
         fasterRCNN = nn.DataParallel(fasterRCNN)
+
+    # set optimiser
+    lr = 0.001
+    fasterRCNN.optimizer = torch.optim.Adam(fasterRCNN.parameters(), lr=lr)
 
     iters_per_epoch = int(train_size / args.batch_size)
 
@@ -271,11 +227,6 @@ if __name__ == '__main__':
         fasterRCNN.train()
         loss_temp = 0
         start = time.time()
-
-        # update learning rate
-        if epoch % (args.lr_decay_step + 1) == 0:
-            adjust_learning_rate(optimizer, args.lr_decay_gamma)
-            lr *= args.lr_decay_gamma
 
         # load images
         data_iter = iter(dataloader)
@@ -299,11 +250,11 @@ if __name__ == '__main__':
             loss_temp += loss.item()
 
             # back propagation
-            optimizer.zero_grad()
+            fasterRCNN.optimizer.zero_grad()
             loss.backward()
             if args.net == "vgg16":
                 clip_gradient(fasterRCNN, 10.)
-            optimizer.step()
+            fasterRCNN.optimizer.step()
 
             if step % args.disp_interval == 0:
                 end = time.time()
@@ -343,13 +294,13 @@ if __name__ == '__main__':
                 loss_temp = 0
                 start = time.time()
 
-        # save weights after each eopch
+        # save weights after each epoch
         save_name = os.path.join(output_dir, 'faster_rcnn_{}_{}_{}.pth'.format(args.session, epoch, step))
         save_checkpoint({
             'session': args.session,
             'epoch': epoch + 1,
             'model': fasterRCNN.module.state_dict() if args.mGPUs else fasterRCNN.state_dict(),
-            'optimizer': optimizer.state_dict(),
+            'optimizer': fasterRCNN.optimizer.state_dict(),
             'pooling_mode': cfg.POOLING_MODE,
             'class_agnostic': args.class_agnostic,
         }, save_name)
