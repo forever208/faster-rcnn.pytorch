@@ -121,7 +121,7 @@ I recommend you to train the model in Colab for the environment convinience.
 
 To train a faster R-CNN model with resnet101 on pascal_voc, simply run:
 ```
-python trainval_net_Colab.py --dataset pascal_voc --net res101 --bs 8 --nw 2 --cuda
+python trainval_net_Adam.py --dataset pascal_voc --net res101 --bs 8 --nw 2 --cuda
 ```
 
 where 'bs' is the batch size; nw is the number_of_workers
