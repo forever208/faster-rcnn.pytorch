@@ -128,15 +128,21 @@ where 'bs' is the batch size; nw is the number_of_workers
 
 
 
-## 【6】Test
+## 【6】Test on VOC
 
-If you want to evlauate the detection performance of a pre-trained vgg16 model on pascal_voc test set, simply run
+first creat a folder for your weight file (e.g. download the weights file and move it into the folder)
 ```
-python test_net.py --dataset pascal_voc --net vgg16 \
-                   --checksession $SESSION --checkepoch $EPOCH --checkpoint $CHECKPOINT \
-                   --cuda
+mkdir -p ./models/res101/pascal_voc
+
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1n-YUaO0O2aJhWwZ_7DVF-xFJXK5JaZbR' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1n-YUaO0O2aJhWwZ_7DVF-xFJXK5JaZbR" -O faster_rcnn_1_7_10021.pth && rm -rf /tmp/cookies.txt
+mv faster_rcnn_1_7_10021.pth models/res101/pascal_voc
 ```
-Specify the specific model session, chechepoch and checkpoint, e.g., SESSION=1, EPOCH=6, CHECKPOINT=416.
+
+then run the command:
+```
+python test_net_Colab.py --dataset pascal_voc --net res101 --checksession 1 --checkepoch 7 --checkpoint 10021 --cuda
+```
+where SESSION=1, EPOCH=7, CHECKPOINT=10021.
 
 
 
