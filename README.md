@@ -45,7 +45,9 @@ cd ../../..
 
 let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is `faster_rcnn_1_7_10021.pth` and you have put it into folder `./data/pretrained_model/`
 
-#### Download pre-trained weights by command (I saved the file in my Gdrive)
+
+#### Download pre-trained weights by command 
+I have saved the file in my Gdrive, so you can download by:
 ```
 cd data/pretrained_model/
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1n-YUaO0O2aJhWwZ_7DVF-xFJXK5JaZbR' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1n-YUaO0O2aJhWwZ_7DVF-xFJXK5JaZbR" -O faster_rcnn_1_7_10021.pth && rm -rf /tmp/cookies.txt
@@ -93,7 +95,7 @@ Please also follow the instructions in [py-faster-rcnn](https://github.com/rbgir
 
 ## 【4】Pretrained Model
 
-#### Download pre-trained weights by command (I saved the file in my Gdrive)
+#### Download pre-trained weights by command
 I have saved the resnet101 weigths in my Gdrive, so you can download the weights by command:
 ```
 cd data/pretrained_model/
