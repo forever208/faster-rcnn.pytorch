@@ -90,8 +90,8 @@ Please also follow the instructions in [py-faster-rcnn](https://github.com/rbgir
 
 ## 【4】Pretrained Model
 
-#### Download pre-trained weights by command
-I have put the resnet101 weigths in my Gdrive, so you can download the weights by command:
+#### download pre-trained weights by command (I saved the file in my Gdrive)
+I have saved the resnet101 weigths in my Gdrive, so you can download the weights by command:
 ```
 cd data/pretrained_model/
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1Pyv546ss5q4idvcXE_Z_GFn_qOhDz10H' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1Pyv546ss5q4idvcXE_Z_GFn_qOhDz10H" -O resnet101_caffe.pth && rm -rf /tmp/cookies.txt
