@@ -38,11 +38,11 @@ cd ../../..
 
 ## 【2】Run demo (detect images)
 
-#### download pre-trained weights manually
+#### Download pre-trained weights manually
 
 let's say, you downloaded the model [Res-101](https://www.dropbox.com/s/4v3or0054kzl19q/faster_rcnn_1_7_10021.pth?dl=0) whose filename is `faster_rcnn_1_7_10021.pth` and you have put it into folder `./data/pretrained_model/`
 
-#### download pre-trained weights by command (I saved the file in my Gdrive)
+#### Download pre-trained weights by command (I saved the file in my Gdrive)
 ```
 cd data/pretrained_model/
 wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1n-YUaO0O2aJhWwZ_7DVF-xFJXK5JaZbR' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1n-YUaO0O2aJhWwZ_7DVF-xFJXK5JaZbR" -O faster_rcnn_1_7_10021.pth && rm -rf /tmp/cookies.txt
@@ -90,7 +90,7 @@ Please also follow the instructions in [py-faster-rcnn](https://github.com/rbgir
 
 ## 【4】Pretrained Model
 
-#### download pre-trained weights by command (I saved the file in my Gdrive)
+#### Download pre-trained weights by command (I saved the file in my Gdrive)
 I have saved the resnet101 weigths in my Gdrive, so you can download the weights by command:
 ```
 cd data/pretrained_model/
@@ -111,36 +111,17 @@ Download them and put them into the folder `./data/pretrained_model/`
 
 ## 【5】Train on VOC
 
-Before training, set the right directory to save and load the trained models. Change the arguments "save_dir" and "load_dir" in trainval_net.py and test_net.py to adapt to your environment.
+#### Train Faster R-CNN in Colab
+I recommend you to train the model in Colab for the environment convinience.
 
-To train a faster R-CNN model with vgg16 on pascal_voc, simply run:
+To train a faster R-CNN model with resnet101 on pascal_voc, simply run:
 ```
-CUDA_VISIBLE_DEVICES=$GPU_ID python trainval_net.py \
-                   --dataset pascal_voc --net vgg16 \
-                   --bs $BATCH_SIZE --nw $WORKER_NUMBER \
-                   --lr $LEARNING_RATE --lr_decay_step $DECAY_STEP \
-                   --cuda
-```
-where 'bs' is the batch size with default 1. Alternatively, to train with resnet101 on pascal_voc, simple run:
-```
- CUDA_VISIBLE_DEVICES=$GPU_ID python trainval_net.py \
-                    --dataset pascal_voc --net res101 \
-                    --bs $BATCH_SIZE --nw $WORKER_NUMBER \
-                    --lr $LEARNING_RATE --lr_decay_step $DECAY_STEP \
-                    --cuda
-```
-Above, BATCH_SIZE and WORKER_NUMBER can be set adaptively according to your GPU memory size. **On Titan Xp with 12G memory, it can be up to 4**.
-
-If you have multiple (say 8) Titan Xp GPUs, then just use them all! Try:
-```
-python trainval_net.py --dataset pascal_voc --net vgg16 \
-                       --bs 24 --nw 8 \
-                       --lr $LEARNING_RATE --lr_decay_step $DECAY_STEP \
-                       --cuda --mGPUs
-
+python trainval_net_Colab.py --dataset pascal_voc --net res101 --bs 8 --nw 2 --cuda
 ```
 
-Change dataset to "coco" or 'vg' if you want to train on COCO or Visual Genome.
+where 'bs' is the batch size; nw is the number_of_workers
+
+
 
 ## 【6】Test
 
