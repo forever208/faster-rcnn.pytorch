@@ -8,7 +8,6 @@ import os
 import numpy as np
 import argparse
 import pprint
-import pdb
 import time
 
 import torch
@@ -19,8 +18,7 @@ from torch.utils.data.sampler import Sampler
 from roi_data_layer.roidb import combined_roidb
 from roi_data_layer.roibatchLoader import roibatchLoader
 from model.utils.config import cfg
-from model.utils.net_utils import adjust_learning_rate, save_checkpoint, clip_gradient
-from model.faster_rcnn.vgg16 import vgg16
+from model.utils.net_utils import adjust_learning_rate, save_checkpoint
 from model.faster_rcnn.resnet import resnet
 
 
@@ -30,7 +28,7 @@ def parse_args():
                         help='training dataset',
                         default='pascal_voc', type=str)
     parser.add_argument('--net', dest='net',
-                        help='vgg16, res101',
+                        help='res50, res101, res152',
                         default='res101', type=str)
     parser.add_argument('--start_epoch', dest='start_epoch',
                         help='starting epoch',
@@ -66,25 +64,10 @@ def parse_args():
     parser.add_argument('--cag', dest='class_agnostic',
                         help='whether perform class_agnostic bbox regression',
                         action='store_true')
-
     # set training session
     parser.add_argument('--s', dest='session',
                         help='training session',
                         default=1, type=int)
-
-    # load pre-trained model
-    parser.add_argument('--r', dest='resume',
-                        help='resume checkpoint or not',
-                        default=False, type=bool)
-    parser.add_argument('--checksession', dest='checksession',
-                        help='checksession to load model',
-                        default=1, type=int)
-    parser.add_argument('--checkepoch', dest='checkepoch',
-                        help='checkepoch to load model',
-                        default=1, type=int)
-    parser.add_argument('--checkpoint', dest='checkpoint',
-                        help='checkpoint to load model',
-                        default=0, type=int)
     # log and display
     parser.add_argument('--use_tfb', dest='use_tfboard',
                         help='whether use tensorboard',
@@ -129,25 +112,14 @@ if __name__ == '__main__':
         args.imdbval_name = "voc_2007_test"
         args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '20']
     else:
-        raise RuntimeError("we currently only support pascal_voc dataset")
-
-    # # choose config file .yml
-    # if args.large_scale:
-    #     args.cfg_file = "cfgs/{}_ls.yml".format(args.net)
-    # else:
-    #     args.cfg_file = "cfgs/{}.yml".format(args.net)
-    # # update some cfg parameters
-    # if args.cfg_file is not None:
-    #     cfg_from_file(args.cfg_file)
-    # if args.set_cfgs is not None:
-    #     cfg_from_list(args.set_cfgs)
+        raise Exception("we currently only support pascal_voc dataset")
 
     print('Using config:')
     pprint.pprint(cfg)
     np.random.seed(cfg.RNG_SEED)
 
     if torch.cuda.is_available() and not args.cuda:
-        raise RuntimeError("WARNING: You have an available CUDA, so you should probably run with --cuda")
+        raise Exception("WARNING: You have an available CUDA, so you should probably run with --cuda")
 
     # Load training data
     # -- Note: Use validation set and disable the flipped to enable faster loading.
@@ -165,7 +137,7 @@ if __name__ == '__main__':
     sampler_batch = sampler(train_size, args.batch_size)
     dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size, imdb.num_classes, training=True)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
-                                             sampler=sampler_batch, num_workers=args.num_workers)
+                                             sampler=sampler_batch, num_workers=args.num_workers, pin_memory=True)
     # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
     #                                          shuffle=True, num_workers=args.num_workers)
 
@@ -188,40 +160,36 @@ if __name__ == '__main__':
     num_boxes = Variable(num_boxes)
     gt_boxes = Variable(gt_boxes)
 
-    if args.cuda:
-        cfg.CUDA = True
-
     # initialise the network and load pre-trained weights
-    if args.net == 'vgg16':
-        fasterRCNN = vgg16(imdb.classes, pretrained=True, class_agnostic=args.class_agnostic)
-    elif args.net == 'res101':
+    if args.net == 'res101':
         fasterRCNN = resnet(imdb.classes, 101, pretrained=True, class_agnostic=args.class_agnostic)
     elif args.net == 'res50':
         fasterRCNN = resnet(imdb.classes, 50, pretrained=True, class_agnostic=args.class_agnostic)
     elif args.net == 'res152':
         fasterRCNN = resnet(imdb.classes, 152, pretrained=True, class_agnostic=args.class_agnostic)
     else:
-        print("network is not defined")
-        pdb.set_trace()
+        raise Exception("network is not defined")
 
     fasterRCNN.create_architecture()
 
+    # use cuda and multiple GPUs
     if args.cuda:
         fasterRCNN.cuda()
     if args.mGPUs:
         fasterRCNN = nn.DataParallel(fasterRCNN)
 
     # set optimiser
-    lr = 0.001
+    lr = cfg.TRAIN.LEARNING_RATE
     fasterRCNN.optimizer = torch.optim.Adam(fasterRCNN.parameters(), lr=lr)
 
-    iters_per_epoch = int(train_size / args.batch_size)
-
+    # use Tensorboard
     if args.use_tfboard:
         from tensorboardX import SummaryWriter
         logger = SummaryWriter("logs")
 
     """training the network"""
+    iters_per_epoch = int(train_size / args.batch_size)
+
     for epoch in range(args.start_epoch, args.max_epochs + 1):
         # setting to train mode
         fasterRCNN.train()
@@ -252,10 +220,9 @@ if __name__ == '__main__':
             # back propagation
             fasterRCNN.optimizer.zero_grad()
             loss.backward()
-            if args.net == "vgg16":
-                clip_gradient(fasterRCNN, 10.)
             fasterRCNN.optimizer.step()
 
+            # print out training info for every 100 steps
             if step % args.disp_interval == 0:
                 end = time.time()
                 if step > 0:
