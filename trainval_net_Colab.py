@@ -223,7 +223,7 @@ if __name__ == '__main__':
         loss_temp = 0
         start = time.time()
 
-        # update learning rate
+        # lr = 0.1 * lr for every 5 epochs
         if epoch % (args.lr_decay_step + 1) == 0:
             adjust_learning_rate(optimizer, args.lr_decay_gamma)
             lr *= args.lr_decay_gamma
