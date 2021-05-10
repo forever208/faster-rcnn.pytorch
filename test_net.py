@@ -257,7 +257,7 @@ if __name__ == '__main__':
                            + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
                 box_deltas = box_deltas.view(1, -1, 4 * len(imdb.classes))
 
-          pred_boxes = bbox_transform_inv(boxes, box_deltas, 1)
+          pred_boxes = bbox_transform_inv(boxes, box_deltas)
           pred_boxes = clip_boxes(pred_boxes, im_info.data, 1)
       else:
           # Simply repeat the boxes, once for each class

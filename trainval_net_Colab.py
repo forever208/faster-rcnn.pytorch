@@ -70,7 +70,7 @@ def parse_args():
     # config optimization
     parser.add_argument('--o', dest='optimizer',
                         help='training optimizer',
-                        default="sgd", type=str)
+                        default="adam", type=str)
     parser.add_argument('--lr', dest='lr',
                         help='starting learning rate',
                         default=0.001, type=float)
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     if args.cuda:
         cfg.CUDA = True
 
-    # initialize the network
+    # initialise the network and load pre-trained weights
     if args.net == 'vgg16':
         fasterRCNN = vgg16(imdb.classes, pretrained=True, class_agnostic=args.class_agnostic)
     elif args.net == 'res101':
