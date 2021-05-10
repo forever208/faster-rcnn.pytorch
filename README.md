@@ -60,9 +60,31 @@ you will find the detection results in folder `/images`
 
 ## 【3】Download Datasets
 
-* **PASCAL_VOC 07+12**: Please follow the instructions in [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn#beyond-the-demo-installation-for-training-and-testing-models) to prepare VOC datasets. Actually, you can refer to any others. After downloading the data, creat softlinks in the folder data/.
+#### PASCAL_VOC_2007
+download and unzip the VOC2007 dataset by the command:
+```
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtrainval_06-Nov-2007.tar
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar
+wget http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCdevkit_08-Jun-2007.tar
 
-* **COCO**: Please also follow the instructions in [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn#beyond-the-demo-installation-for-training-and-testing-models) to prepare the data.
+tar xvf VOCtrainval_06-Nov-2007.tar
+tar xvf VOCtest_06-Nov-2007.tar
+tar xvf VOCdevkit_08-Jun-2007.tar
+
+rm -rf VOCtrainval_06-Nov-2007.tar
+rm -rf VOCtest_06-Nov-2007.tar
+rm -rf VOCdevkit_08-Jun-2007.tar
+```
+
+remember to move the dataset to the folder `./data` and rename it as `VOCdevkit2007`
+you can do it by the command:
+```
+!mv VOCdevkit/ ./data/VOCdevkit2007
+```
+
+
+#### COCO
+Please also follow the instructions in [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn#beyond-the-demo-installation-for-training-and-testing-models) to prepare the data.
 
 
 
