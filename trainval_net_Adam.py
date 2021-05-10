@@ -28,7 +28,7 @@ def parse_args():
                         help='training dataset',
                         default='pascal_voc', type=str)
     parser.add_argument('--net', dest='net',
-                        help='res50 res101',
+                        help='res50, res101, res152',
                         default='res101', type=str)
     parser.add_argument('--start_epoch', dest='start_epoch',
                         help='starting epoch',
@@ -45,7 +45,7 @@ def parse_args():
 
     parser.add_argument('--save_dir', dest='save_dir',
                         help='directory to save models',
-                        default="./data",type=str)
+                        default="./data", type=str)
     parser.add_argument('--nw', dest='num_workers',
                         help='number of worker to load data to CPU RAM, set to #CPU core',
                         default=2, type=int)
@@ -53,32 +53,17 @@ def parse_args():
                         help='whether use CUDA',
                         action='store_true')
     parser.add_argument('--ls', dest='large_scale',
-                        help='whether use large imag scale',
+                        help='whether use large image scale',
                         action='store_true')
     parser.add_argument('--mGPUs', dest='mGPUs',
                         help='whether use multiple GPUs',
                         action='store_true')
     parser.add_argument('--bs', dest='batch_size',
                         help='batch_size',
-                        default=16, type=int)
+                        default=8, type=int)
     parser.add_argument('--cag', dest='class_agnostic',
                         help='whether perform class_agnostic bbox regression',
                         action='store_true')
-
-    # config optimization
-    parser.add_argument('--o', dest='optimizer',
-                        help='training optimizer',
-                        default="sgd", type=str)
-    parser.add_argument('--lr', dest='lr',
-                        help='starting learning rate',
-                        default=0.001, type=float)
-    parser.add_argument('--lr_decay_step', dest='lr_decay_step',
-                        help='step to do learning rate decay, unit is epoch',
-                        default=5, type=int)
-    parser.add_argument('--lr_decay_gamma', dest='lr_decay_gamma',
-                        help='learning rate decay ratio',
-                        default=0.1, type=float)
-
     # set training session
     parser.add_argument('--s', dest='session',
                         help='training session',
@@ -153,6 +138,8 @@ if __name__ == '__main__':
     dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size, imdb.num_classes, training=True)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
                                              sampler=sampler_batch, num_workers=args.num_workers, pin_memory=True)
+    # dataloader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size,
+    #                                          shuffle=True, num_workers=args.num_workers)
 
     # initialize the tensor holder
     im_data = torch.FloatTensor(1)
@@ -173,10 +160,7 @@ if __name__ == '__main__':
     num_boxes = Variable(num_boxes)
     gt_boxes = Variable(gt_boxes)
 
-    # if args.cuda:
-    #     cfg.CUDA = True
-
-    # initialize the network
+    # initialise the network and load pre-trained weights
     if args.net == 'res101':
         fasterRCNN = resnet(imdb.classes, 101, pretrained=True, class_agnostic=args.class_agnostic)
     elif args.net == 'res50':
@@ -188,28 +172,17 @@ if __name__ == '__main__':
 
     fasterRCNN.create_architecture()
 
-    # set optimizer and lr
-    lr = cfg.TRAIN.LEARNING_RATE
-    params = []
-    for key, value in dict(fasterRCNN.named_parameters()).items():
-        if value.requires_grad:
-            if 'bias' in key:
-                params += [{'params': [value], 'lr': lr * (cfg.TRAIN.DOUBLE_BIAS + 1), \
-                            'weight_decay': cfg.TRAIN.BIAS_DECAY and cfg.TRAIN.WEIGHT_DECAY or 0}]
-            else:
-                params += [{'params': [value], 'lr': lr, 'weight_decay': cfg.TRAIN.WEIGHT_DECAY}]
-
+    # use cuda and multiple GPUs
     if args.cuda:
         fasterRCNN.cuda()
     if args.mGPUs:
         fasterRCNN = nn.DataParallel(fasterRCNN)
 
-    if args.optimizer == "adam":
-        lr = lr * 0.1
-        optimizer = torch.optim.Adam(params)
-    elif args.optimizer == "sgd":
-        optimizer = torch.optim.SGD(params, momentum=cfg.TRAIN.MOMENTUM)
+    # set optimiser
+    lr = cfg.TRAIN.LEARNING_RATE * 0.1
+    fasterRCNN.optimizer = torch.optim.Adam(fasterRCNN.parameters(), lr=lr)
 
+    # use Tensorboard
     if args.use_tfboard:
         from tensorboardX import SummaryWriter
         logger = SummaryWriter("logs")
@@ -222,11 +195,6 @@ if __name__ == '__main__':
         fasterRCNN.train()
         loss_temp = 0
         start = time.time()
-
-        # update learning rate
-        if epoch % (args.lr_decay_step + 1) == 0:
-            adjust_learning_rate(optimizer, args.lr_decay_gamma)
-            lr *= args.lr_decay_gamma
 
         # load images
         data_iter = iter(dataloader)
@@ -250,10 +218,11 @@ if __name__ == '__main__':
             loss_temp += loss.item()
 
             # back propagation
-            optimizer.zero_grad()
+            fasterRCNN.optimizer.zero_grad()
             loss.backward()
-            optimizer.step()
+            fasterRCNN.optimizer.step()
 
+            # print out training info for every 100 steps
             if step % args.disp_interval == 0:
                 end = time.time()
                 if step > 0:
@@ -292,13 +261,13 @@ if __name__ == '__main__':
                 loss_temp = 0
                 start = time.time()
 
-        # save weights after each eopch
+        # save weights after each epoch
         save_name = os.path.join(output_dir, 'faster_rcnn_{}_{}_{}.pth'.format(args.session, epoch, step))
         save_checkpoint({
             'session': args.session,
             'epoch': epoch + 1,
             'model': fasterRCNN.module.state_dict() if args.mGPUs else fasterRCNN.state_dict(),
-            'optimizer': optimizer.state_dict(),
+            'optimizer': fasterRCNN.optimizer.state_dict(),
             'pooling_mode': cfg.POOLING_MODE,
             'class_agnostic': args.class_agnostic,
         }, save_name)
