@@ -64,8 +64,6 @@ you will find the detection results in folder `/images`
 
 * **COCO**: Please also follow the instructions in [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn#beyond-the-demo-installation-for-training-and-testing-models) to prepare the data.
 
-* **Visual Genome**: Please follow the instructions in [bottom-up-attention](https://github.com/peteanderson80/bottom-up-attention) to prepare Visual Genome dataset. You need to download the images and object annotation files first, and then perform proprecessing to obtain the vocabulary and cleansed annotations based on the scripts provided in this repository.
-
 
 
 ## 【4】Pretrained Model
@@ -84,7 +82,7 @@ Download them and put them into the folder `./data/pretrained_model/`
 
 
 
-## 【5】Train
+## 【5】Train on VOC
 
 Before training, set the right directory to save and load the trained models. Change the arguments "save_dir" and "load_dir" in trainval_net.py and test_net.py to adapt to your environment.
 
