@@ -76,7 +76,7 @@ rm -rf VOCtest_06-Nov-2007.tar
 rm -rf VOCdevkit_08-Jun-2007.tar
 ```
 
-remember to move the dataset to the folder `./data` and rename it as `VOCdevkit2007`
+remember to move the dataset to the folder `./data` and rename it as `VOCdevkit2007`.
 you can do it by the command:
 ```
 !mv VOCdevkit/ ./data/VOCdevkit2007
@@ -90,6 +90,15 @@ Please also follow the instructions in [py-faster-rcnn](https://github.com/rbgir
 
 ## 【4】Pretrained Model
 
+#### Download pre-trained weights by command
+I have put the resnet101 weigths in my Gdrive, so you can download the weights by command:
+```
+cd data/pretrained_model/
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1Pyv546ss5q4idvcXE_Z_GFn_qOhDz10H' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1Pyv546ss5q4idvcXE_Z_GFn_qOhDz10H" -O resnet101_caffe.pth && rm -rf /tmp/cookies.txt
+```
+
+#### Download pre-trained weights manually 
+
 We used two pretrained models in our experiments, VGG and ResNet101. You can download these two models from:
 
 * VGG16: [Dropbox](https://www.dropbox.com/s/s3brpk0bdq60nyb/vgg16_caffe.pth?dl=0), [VT Server](https://filebox.ece.vt.edu/~jw2yang/faster-rcnn/pretrained-base-models/vgg16_caffe.pth)
@@ -97,10 +106,6 @@ We used two pretrained models in our experiments, VGG and ResNet101. You can dow
 * ResNet101: [Dropbox](https://www.dropbox.com/s/iev3tkbz5wyyuz9/resnet101_caffe.pth?dl=0), [VT Server](https://filebox.ece.vt.edu/~jw2yang/faster-rcnn/pretrained-base-models/resnet101_caffe.pth)
 
 Download them and put them into the folder `./data/pretrained_model/`
-
-**NOTE**. We compare the pretrained models from Pytorch and Caffe, and surprisingly find Caffe pretrained models have slightly better performance than Pytorch pretrained. We would suggest to use Caffe pretrained models from the above link to reproduce our results.
-
-**If you want to use pytorch pre-trained models, please remember to transpose images from BGR to RGB, and also use the same data transformer (minus mean and normalize) as used in pretrained model.**
 
 
 
