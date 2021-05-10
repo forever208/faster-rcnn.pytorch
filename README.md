@@ -1,4 +1,4 @@
-Running the repo in Colab is recommended, copy the file [Faster R-CNN COlab](https://colab.research.google.com/drive/1OBl3rsnYy5l6ep6JnkjFaAror9Wt92wo?usp=sharing), then run it on Colab.
+Running the repo in Colab is recommended, copy the file [Faster R-CNN Colab](https://colab.research.google.com/drive/1OBl3rsnYy5l6ep6JnkjFaAror9Wt92wo?usp=sharing), then run it on Colab. (remember to change the runtime type to GPU in Colab)
 
 
 ## 【1】Installation
