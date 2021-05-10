@@ -5,14 +5,12 @@
 # --------------------------------------------------------
 
 import os
-import sys
 import numpy as np
 import argparse
 import pprint
 import pdb
 import time
 
-import cv2
 import torch
 from torch.autograd import Variable
 import pickle
@@ -22,7 +20,6 @@ from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from model.rpn.bbox_transform import clip_boxes
 from model.roi_layers import nms
 from model.rpn.bbox_transform import bbox_transform_inv
-from model.utils.net_utils import save_net, load_net, vis_detections
 from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet
 
@@ -78,7 +75,6 @@ weight_decay = cfg.TRAIN.WEIGHT_DECAY
 
 
 if __name__ == '__main__':
-
     args = parse_args()
     print('Called with args:')
     print(args)
@@ -116,7 +112,7 @@ if __name__ == '__main__':
     load_name = os.path.join(input_dir,
                              'faster_rcnn_{}_{}_{}.pth'.format(args.checksession, args.checkepoch, args.checkpoint))
 
-    # initilize the network here.
+    # initialize the network here.
     if args.net == 'vgg16':
         fasterRCNN = vgg16(imdb.classes, pretrained=False, class_agnostic=args.class_agnostic)
     elif args.net == 'res101':
@@ -173,7 +169,7 @@ if __name__ == '__main__':
     # build up dataloader pipeline
     output_dir = get_output_dir(imdb, save_name)
     dataset = roibatchLoader(roidb, ratio_list, ratio_index, 1, imdb.num_classes, training=False, normalize=False)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0, pin_memory=True)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=2, prefetch_factor=8, pin_memory=True)
     data_iter = iter(dataloader)
 
     _t = {'im_detect': time.time(), 'misc': time.time()}
@@ -181,6 +177,7 @@ if __name__ == '__main__':
 
     fasterRCNN.eval()
     empty_array = np.transpose(np.array([[], [], [], [], []]), (1, 0))
+
 
     for i in range(num_images):
         data = next(data_iter)
@@ -226,6 +223,7 @@ if __name__ == '__main__':
         detect_time = det_toc - det_tic
         misc_tic = time.time()
 
+        # nms for each class
         for j in range(1, imdb.num_classes):
             inds = torch.nonzero(scores[:, j] > thresh).view(-1)
             # if there is a detection
@@ -256,8 +254,7 @@ if __name__ == '__main__':
 
         misc_toc = time.time()
         nms_time = misc_toc - misc_tic
-        print('im_detect: {:d}/{:d} {:.3f}s {:.3f}s   \r' .format(i+1, num_images, detect_time, nms_time))
-        # sys.stdout.flush()
+        print('precess:{:d}/{:d}, detect_time:{:.3f}s, nms_time:{:.3f}s' .format(i+1, num_images, detect_time, nms_time))
 
     with open(det_file, 'wb') as f:
         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
