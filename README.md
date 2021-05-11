@@ -84,7 +84,7 @@ rm -rf VOCdevkit_08-Jun-2007.tar
 remember to move the dataset to the folder `./data` and rename it as `VOCdevkit2007`.
 you can do it by the command:
 ```
-!mv VOCdevkit/ ./data/VOCdevkit2007
+mv VOCdevkit/ ./data/VOCdevkit2007
 ```
 
 
