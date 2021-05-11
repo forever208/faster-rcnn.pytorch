@@ -55,9 +55,6 @@ def parse_args():
     parser.add_argument('--bs', dest='batch_size',
                         help='batch_size',
                         default=1, type=int)
-    parser.add_argument('--vis', dest='vis',
-                        help='visualization mode',
-                        action='store_true')
 
     args = parser.parse_args()
     return args
@@ -111,7 +108,6 @@ if __name__ == '__main__':
     # -- Note: Use validation set and disable the flipped to enable faster loading.
     if not os.path.exists(args.model_dir):
         raise Exception('There is no input directory for loading network from ' + args.model_dir)
-    load_name = os.path.join(args.model_dir, args.model_weights)
 
     pascal_classes = np.asarray(['__background__',
                                  'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair',
@@ -128,16 +124,18 @@ if __name__ == '__main__':
     elif args.net == 'res152':
         fasterRCNN = resnet(pascal_classes, 152, pretrained=False, class_agnostic=args.class_agnostic)
     else:
-        print("network is not defined")
-        pdb.set_trace()
+        raise Exception("network is not defined")
 
     fasterRCNN.create_architecture()
 
+    # load weights
+    load_name = os.path.join(args.model_dir, args.model_weights)
     print("load checkpoint %s" % (load_name))
     if args.cuda > 0:
         checkpoint = torch.load(load_name)
     else:
         checkpoint = torch.load(load_name, map_location=(lambda storage, loc: storage))
+
     fasterRCNN.load_state_dict(checkpoint['model'])
     if 'pooling_mode' in checkpoint.keys():
         cfg.POOLING_MODE = checkpoint['pooling_mode']
@@ -157,6 +155,7 @@ if __name__ == '__main__':
         im_info = im_info.cuda()
         num_boxes = num_boxes.cuda()
         gt_boxes = gt_boxes.cuda()
+        fasterRCNN.cuda()
 
     # make variable
     im_data = Variable(im_data, volatile=True)
@@ -164,12 +163,7 @@ if __name__ == '__main__':
     num_boxes = Variable(num_boxes, volatile=True)
     gt_boxes = Variable(gt_boxes, volatile=True)
 
-    if args.cuda > 0:
-        cfg.CUDA = True
-        fasterRCNN.cuda()
-
     fasterRCNN.eval()
-
     start = time.time()
     max_per_image = 100
     thresh = 0.05
@@ -240,8 +234,9 @@ if __name__ == '__main__':
 
             pred_boxes = bbox_transform_inv(boxes, box_deltas)
             pred_boxes = clip_boxes(pred_boxes, im_info.data, 1)
+
+        # Simply repeat the boxes, once for each class
         else:
-            # Simply repeat the boxes, once for each class
             pred_boxes = np.tile(boxes, (1, scores.shape[1]))
 
         pred_boxes /= im_scales[0]

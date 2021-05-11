@@ -193,7 +193,7 @@ if __name__ == '__main__':
 
     # set optimiser
     lr = args.lr * 0.1
-    optimizer = torch.optim.Adam(fasterRCNN.parameters())
+    optimizer = torch.optim.Adam(fasterRCNN.parameters(), lr=lr)
 
     # use Tensorboard
     if args.use_tfboard:
@@ -285,7 +285,7 @@ if __name__ == '__main__':
             'session': args.session,
             'epoch': epoch + 1,
             'model': fasterRCNN.module.state_dict() if args.mGPUs else fasterRCNN.state_dict(),
-            'optimizer': fasterRCNN.optimizer.state_dict(),
+            'optimizer': optimizer.state_dict(),
             'pooling_mode': cfg.POOLING_MODE,
             'class_agnostic': args.class_agnostic,
         }, save_name)
