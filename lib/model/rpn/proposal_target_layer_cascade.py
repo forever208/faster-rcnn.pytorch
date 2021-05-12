@@ -4,8 +4,6 @@ from __future__ import absolute_import
 # Copyright (c) 2015 Microsoft
 # Licensed under The MIT License [see LICENSE for details]
 # Written by Ross Girshick and Sean Bell
-# --------------------------------------------------------
-# --------------------------------------------------------
 # Reorganized and modified by Jianwei Yang and Jiasen Lu
 # --------------------------------------------------------
 
@@ -15,13 +13,12 @@ import numpy as np
 import numpy.random as npr
 from ..utils.config import cfg
 from .bbox_transform import bbox_overlaps_batch, bbox_transform_batch
-import pdb
 
 
 class _ProposalTargetLayer(nn.Module):
     """
-    Assign object detection proposals to ground-truth targets. Produces proposal
-    classification labels and bounding-box regression targets.
+    Assign object detection proposals to ground-truth targets.
+    Produces labels for proposal classification and bbox regression.
     """
 
     def __init__(self, nclasses):
@@ -30,6 +27,7 @@ class _ProposalTargetLayer(nn.Module):
         self.BBOX_NORMALIZE_MEANS = torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS)
         self.BBOX_NORMALIZE_STDS = torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS)
         self.BBOX_INSIDE_WEIGHTS = torch.FloatTensor(cfg.TRAIN.BBOX_INSIDE_WEIGHTS)
+
 
     def forward(self, all_rois, gt_boxes, num_boxes):
 

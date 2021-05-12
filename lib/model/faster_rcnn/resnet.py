@@ -202,13 +202,19 @@ def resnet152(pretrained=False):
 
 
 class resnet(_fasterRCNN):
+    """
+    Define the backbone and head in this child class
+    Define the RPN & ROI_Pooling in the parent class (_fasterRCNN)
+    """
+
     def __init__(self, classes, num_layers=101, pretrained=False, class_agnostic=False):
-        self.model_path = 'data/pretrained_model/resnet101_caffe.pth'
+        self.model_path = 'data/pretrained_model/resnet101_caffe.pth'    # path of the pre-trained weights
         self.dout_base_model = 1024
         self.pretrained = pretrained
         self.class_agnostic = class_agnostic
 
         _fasterRCNN.__init__(self, classes, class_agnostic)
+
 
     def _init_modules(self):
         resnet = resnet101()
@@ -218,19 +224,20 @@ class resnet(_fasterRCNN):
             state_dict = torch.load(self.model_path)
             resnet.load_state_dict({k: v for k, v in state_dict.items() if k in resnet.state_dict()})
 
-        # Build resnet.
+        # resnet components.
         self.RCNN_base = nn.Sequential(resnet.conv1, resnet.bn1, resnet.relu,
                                        resnet.maxpool, resnet.layer1, resnet.layer2, resnet.layer3)
-
         self.RCNN_top = nn.Sequential(resnet.layer4)
 
+        # cls prediction branch
         self.RCNN_cls_score = nn.Linear(2048, self.n_classes)
+        # bbox prediction branch
         if self.class_agnostic:
             self.RCNN_bbox_pred = nn.Linear(2048, 4)
         else:
-            self.RCNN_bbox_pred = nn.Linear(2048, 4 * self.n_classes)
+            self.RCNN_bbox_pred = nn.Linear(2048, 4*self.n_classes)
 
-        # Fix blocks
+        # freeze the resnet backbone during training
         for p in self.RCNN_base[0].parameters(): p.requires_grad = False
         for p in self.RCNN_base[1].parameters(): p.requires_grad = False
 
@@ -250,12 +257,12 @@ class resnet(_fasterRCNN):
         self.RCNN_base.apply(set_bn_fix)
         self.RCNN_top.apply(set_bn_fix)
 
+
     def train(self, mode=True):
         # Override train so that the training mode is set as we want
         nn.Module.train(self, mode)
         if mode:
-            # Set fixed blocks to be in eval mode
-            self.RCNN_base.eval()
+            self.RCNN_base.eval()    # set the backbone as eval mode to avoid gradient computation
             self.RCNN_base[5].train()
             self.RCNN_base[6].train()
 
@@ -266,6 +273,7 @@ class resnet(_fasterRCNN):
 
             self.RCNN_base.apply(set_bn_eval)
             self.RCNN_top.apply(set_bn_eval)
+
 
     def _head_to_tail(self, pool5):
         fc7 = self.RCNN_top(pool5).mean(3).mean(2)

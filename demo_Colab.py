@@ -5,14 +5,12 @@
 # --------------------------------------------------------
 
 import os
-import sys
 import numpy as np
 import argparse
 import pprint
 import time
 import cv2
 import torch
-from torch.autograd import Variable
 
 from skimage import io
 from model.utils.config import cfg
@@ -23,7 +21,6 @@ from model.utils.net_utils import save_net, load_net, vis_detections
 from model.utils.blob import im_list_to_blob
 from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet
-import pdb
 
 
 def parse_args():
@@ -40,9 +37,6 @@ def parse_args():
     parser.add_argument('--image_dir', dest='image_dir',
                         help='directory to load images for demo',
                         default="./images")
-    parser.add_argument('--cuda', dest='cuda',
-                        help='whether use CUDA',
-                        action='store_true')
     parser.add_argument('--mGPUs', dest='mGPUs',
                         help='whether use multiple GPUs',
                         action='store_true')
@@ -62,15 +56,15 @@ def parse_args():
 
 def _get_image_blob(img):
     """
-    Convert one image into a network input.
+    Given an image, normalise and reshape it to size (600, x) where x<=800
     @param img: BGR images (nd array)
-    @return: blob, a data blob holding an image pyramid (nd array)
-             im_scale_factors, a list of image scales (relative to im)
+    @return: blob, 4D array, (num_images, h_max, w_max, 3)
+             im_scale_factors, 1D array of image scale_factor
     """
     im_orig = img.astype(np.float32, copy=True)
     im_orig -= cfg.PIXEL_MEANS
 
-    im_shape = im_orig.shape
+    im_shape = im_orig.shape    # (h, w, 3)
     im_size_min = np.min(im_shape[0:2])    # w or h
     im_size_max = np.max(im_shape[0:2])    # w or h
 
@@ -79,19 +73,18 @@ def _get_image_blob(img):
 
     # reshape img size to (600, x) where x<=800
     for target_size in cfg.TEST.SCALES:
-        im_scale = float(target_size) / float(im_size_min)    # 600 / shorter_side(w/h)
-        if np.round(im_scale*im_size_max) > cfg.TEST.MAX_SIZE:
+        im_scale = float(target_size) / float(im_size_min)    # scale = 600 / shorter_side(w/h)
+        if np.round(im_scale*im_size_max) > cfg.TEST.MAX_SIZE:    # make sure the longer_size <= 1000
             im_scale = float(cfg.TEST.MAX_SIZE) / float(im_size_max)
 
         img = cv2.resize(im_orig, None, None, fx=im_scale, fy=im_scale, interpolation=cv2.INTER_LINEAR)
         im_scale_factors.append(im_scale)
         processed_ims.append(img)
 
-    # Create a blob to hold the input images
+    # Create a blob (curtain) to hold the input images
     blob = im_list_to_blob(processed_ims)
 
     return blob, np.array(im_scale_factors)
-
 
 
 if __name__ == '__main__':
@@ -99,22 +92,17 @@ if __name__ == '__main__':
     print('Called with args:')
     print(args)
 
-    cfg.USE_GPU_NMS = args.cuda
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    cfg.USE_GPU_NMS = True if torch.cuda.is_available() else False
     print('Using config:')
     pprint.pprint(cfg)
     np.random.seed(cfg.RNG_SEED)
 
-    # train set
-    # -- Note: Use validation set and disable the flipped to enable faster loading.
-    if not os.path.exists(args.model_dir):
-        raise Exception('There is no input directory for loading network from ' + args.model_dir)
-
+    # Initialise the network
     pascal_classes = np.asarray(['__background__',
                                  'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair',
                                  'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant',
                                  'sheep', 'sofa', 'train', 'tvmonitor'])
-
-    # Initialise the network
     if args.net == 'vgg16':
         fasterRCNN = vgg16(pascal_classes, pretrained=False, class_agnostic=args.class_agnostic)
     elif args.net == 'res101':
@@ -128,10 +116,12 @@ if __name__ == '__main__':
 
     fasterRCNN.create_architecture()
 
-    # load weights
+    # Load weights
+    if not os.path.exists(args.model_dir):
+        raise Exception('There is no input directory for loading network from ' + args.model_dir)
     load_name = os.path.join(args.model_dir, args.model_weights)
     print("load checkpoint %s" % (load_name))
-    if args.cuda > 0:
+    if torch.cuda.is_available():
         checkpoint = torch.load(load_name)
     else:
         checkpoint = torch.load(load_name, map_location=(lambda storage, loc: storage))
@@ -139,30 +129,16 @@ if __name__ == '__main__':
     fasterRCNN.load_state_dict(checkpoint['model'])
     if 'pooling_mode' in checkpoint.keys():
         cfg.POOLING_MODE = checkpoint['pooling_mode']
-
     print('load model successfully!')
-    print("load checkpoint %s" % (load_name))
 
-    # initialize the tensor holder here.
-    im_data = torch.FloatTensor(1)
-    im_info = torch.FloatTensor(1)
-    num_boxes = torch.LongTensor(1)
-    gt_boxes = torch.FloatTensor(1)
+    # Initialize the tensor holder
+    im_data = torch.FloatTensor(1).to(device)
+    im_info = torch.FloatTensor(1).to(device)
+    num_boxes = torch.LongTensor(1).to(device)
+    gt_boxes = torch.FloatTensor(1).to(device)
 
-    # ship to CUDA
-    if args.cuda > 0:
-        im_data = im_data.cuda()
-        im_info = im_info.cuda()
-        num_boxes = num_boxes.cuda()
-        gt_boxes = gt_boxes.cuda()
-        fasterRCNN.cuda()
-
-    # make variable
-    im_data = Variable(im_data, volatile=True)
-    im_info = Variable(im_info, volatile=True)
-    num_boxes = Variable(num_boxes, volatile=True)
-    gt_boxes = Variable(gt_boxes, volatile=True)
-
+    """start predictions"""
+    fasterRCNN.to(device)
     fasterRCNN.eval()
     start = time.time()
     max_per_image = 100
@@ -179,30 +155,25 @@ if __name__ == '__main__':
 
         # Load images
         im_file = os.path.join(args.image_dir, imglist[num_images])
-        im_in = np.array(io.imread(im_file))
+        im_in = np.array(io.imread(im_file))    # shape (h, w, c)
+        im = im_in[:, :, ::-1]    # RGB -> BGR by reversing the channel
 
-        if len(im_in.shape) == 2:
-            im_in = im_in[:, :, np.newaxis]
-            im_in = np.concatenate((im_in, im_in, im_in), axis=2)
-        # RGB -> BGR
-        im = im_in[:, :, ::-1]
-
-        blobs, im_scales = _get_image_blob(im)
-        im_blob = blobs
-        im_info_np = np.array([[im_blob.shape[1], im_blob.shape[2], im_scales[0]]], dtype=np.float32)
-        im_data_pt = torch.from_numpy(im_blob)
-        im_data_pt = im_data_pt.permute(0, 3, 1, 2)
+        # get image blob (curtain) and scale_factor
+        im_blob, im_scales = _get_image_blob(im)
+        # print(im_blob.shape)
+        im_info_np = np.array([[im_blob.shape[1], im_blob.shape[2], im_scales[0]]], dtype=np.float32)    # 2D array [[h, w, 1.3]]
+        im_data_pt = torch.from_numpy(im_blob)    # 4D array, image (1, h, w, 3)
+        im_data_pt = im_data_pt.permute(0, 3, 1, 2)    # 4D array, image (1, 3, h, w), channel goes first in pytorch
         im_info_pt = torch.from_numpy(im_info_np)
 
         with torch.no_grad():
-            im_data.resize_(im_data_pt.size()).copy_(im_data_pt)
-            im_info.resize_(im_info_pt.size()).copy_(im_info_pt)
-            gt_boxes.resize_(1, 1, 5).zero_()
+            im_data.resize_(im_data_pt.size()).copy_(im_data_pt)    # reshape to (1, 3, h, w) and fill in the img
+            im_info.resize_(im_info_pt.size()).copy_(im_info_pt)    # 2D tensor [[height, width, 1.3]]
+            gt_boxes.resize_(1, 1, 5).zero_()    # 3D tensor [[[conf, x, y, w, h]]]
             num_boxes.resize_(1).zero_()
 
-        det_tic = time.time()
-
         # get the predictions
+        det_tic = time.time()
         rois, cls_prob, bbox_pred, rpn_loss_cls, rpn_loss_box, \
         RCNN_loss_cls, RCNN_loss_bbox, rois_label = fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
 
@@ -215,21 +186,12 @@ if __name__ == '__main__':
             # Optionally normalize targets by a precomputed mean and stdev
             if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
                 if args.class_agnostic:
-                    if args.cuda > 0:
-                        box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
-                                     + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
-                    else:
-                        box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS) \
-                                     + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS)
-
+                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).to(device) \
+                                 + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).to(device)
                     box_deltas = box_deltas.view(1, -1, 4)
                 else:
-                    if args.cuda > 0:
-                        box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
-                                     + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
-                    else:
-                        box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS) \
-                                     + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS)
+                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).to(device) \
+                                 + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).to(device)
                     box_deltas = box_deltas.view(1, -1, 4 * len(pascal_classes))
 
             pred_boxes = bbox_transform_inv(boxes, box_deltas)

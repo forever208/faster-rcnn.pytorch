@@ -42,7 +42,8 @@ class _ProposalLayer(nn.Module):
         """
         for each (H, W) location i
             generate 9 anchor boxes centered on cell i
-            apply predicted bbox deltas at cell i to each of the 9 anchors
+            finetune the for the 9 anchors at cell i bbox by predicted bbox deltas
+
         clip predicted boxes to image
         remove predicted boxes with either height or width < threshold
         sort all (proposal, score) pairs by score from highest to lowest

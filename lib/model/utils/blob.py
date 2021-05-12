@@ -12,9 +12,10 @@ import cv2
 
 
 def im_list_to_blob(ims):
-    """Convert a list of images into a network input.
-
-    Assumes images are already processed (means subtracted, BGR order, ...).
+    """
+    Given images, use the max_h, max_w to build a blob (canvas) to hold all images
+    @param ims: images are already processed (means subtracted, BGR order, ...).
+    @return: 4D array, (num_images, h_max, w_max, 3)
     """
     max_shape = np.array([im.shape for im in ims]).max(axis=0)
     num_images = len(ims)
