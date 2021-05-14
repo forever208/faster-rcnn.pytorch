@@ -57,7 +57,7 @@ cd ../..
 #### run demo
 put your images into folder  `./images`, then run demo
 ```
-python demo.py --net res101  --model_dir ./data/pretrained_model --model_weights faster_rcnn_1_7_10021.pth
+python demo_Colab.py --net res101  --model_dir ./data/pretrained_model --model_weights faster_rcnn_1_7_10021.pth
 ```
 you will find the detection results in folder `/images`
 
